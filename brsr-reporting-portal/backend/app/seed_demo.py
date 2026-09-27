@@ -150,15 +150,27 @@ def _seed_assignment_value(
             MetricDefinition.metric_code == metric_code,
         )
     )
+    is_numeric = metric is not None and metric.data_type.value == "numeric"
+    normalized_value = normalized_unit = None
+    if is_numeric and value is not None:
+        from app.normalization.units import UnitConversionError, normalize_value
+
+        try:
+            normalized_value, normalized_unit = normalize_value(
+                value, raw_unit, metric.unit_family, metric.canonical_unit
+            )
+        except UnitConversionError as exc:
+            logger.error("seed value not normalizable for %s: %s", metric_code, exc)
+            raise
     value_status = MetricValueStatus.LOCKED if status_a == AssignmentStatus.LOCKED \
         else MetricValueStatus(status_a.value)
     mv = MetricValue(
         assignment_id=assignment.id,
         version=1,
         raw_value=Decimal(str(value)),
-        raw_unit=raw_unit if (metric is not None and metric.data_type.value == "numeric") else None,
-        normalized_value=None,
-        normalized_unit=None,
+        raw_unit=raw_unit if is_numeric else None,
+        normalized_value=normalized_value,
+        normalized_unit=normalized_unit,
         qualitative_value=None,
         status=value_status,
         created_by=owner.id,
@@ -262,8 +274,12 @@ def seed_collection(db: Session, entities: dict[str, Entity], esg_manager: AppUs
         )
         if emp_value is not None:
             emp_value.raw_value = Decimal("252")
+            emp_value.normalized_value = Decimal("252")
+            emp_value.normalized_unit = "count"
         if wf_value is not None:
             wf_value.raw_value = Decimal("240")
+            wf_value.normalized_value = Decimal("240")
+            wf_value.normalized_unit = "count"
         db.flush()
         logger.info("demo anomaly: Beta FY25 employees=252 vs workforce=240")
 

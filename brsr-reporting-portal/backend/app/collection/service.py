@@ -163,9 +163,7 @@ def latest_value(db: Session, assignment_id: uuid.UUID) -> MetricValue | None:
     )
 
 
-def _structural_validate(db: Session, assignment: Assignment, payload: dict) -> None:
-    """Basic structural checks required before SUBMIT. The full deterministic
-    validation engine (cross-field, YoY, evidence) runs in the validation phase."""
+def _metric_for_assignment(db: Session, assignment: Assignment) -> MetricDefinition:
     metric = db.scalar(
         select(MetricDefinition).where(
             MetricDefinition.framework_version_id == assignment.framework_version_id,
@@ -174,6 +172,12 @@ def _structural_validate(db: Session, assignment: Assignment, payload: dict) -> 
     )
     if metric is None:
         raise CollectionError("Metric definition missing", 500)
+    return metric
+
+
+def _structural_validate(metric: MetricDefinition, payload: dict) -> None:
+    """Basic structural checks required before SUBMIT. The full deterministic
+    validation engine (cross-field, YoY, evidence) runs in the validation phase."""
     if metric.data_type.value == "numeric":
         if payload.get("raw_value") is None:
             raise CollectionError("Numeric value is required", 422)
@@ -217,8 +221,10 @@ def save_value(
             f"you were editing version {expected_last_version}"
         )
 
+    metric = _metric_for_assignment(db, assignment)
+
     if action == "SUBMIT":
-        _structural_validate(db, assignment, payload)
+        _structural_validate(metric, payload)
         new_status = MetricValueStatus.SUBMITTED
         new_assignment_status = AssignmentStatus.SUBMITTED
     elif action == "SAVE_DRAFT":
@@ -226,6 +232,19 @@ def save_value(
         new_assignment_status = AssignmentStatus.IN_PROGRESS
     else:
         raise CollectionError("action must be SAVE_DRAFT or SUBMIT", 422)
+
+    # unit normalization (spec §10): every numeric value stores its canonical form
+    normalized_value = normalized_unit = None
+    if payload.get("raw_value") is not None:
+        try:
+            from app.normalization.units import UnitConversionError, normalize_value
+
+            normalized_value, normalized_unit = normalize_value(
+                payload["raw_value"], payload.get("raw_unit"),
+                metric.unit_family, metric.canonical_unit,
+            )
+        except UnitConversionError as exc:
+            raise CollectionError(str(exc), 422)
 
     current_status = assignment.status
     if current_status == AssignmentStatus.LOCKED:
@@ -243,8 +262,8 @@ def save_value(
         version=version,
         raw_value=Decimal(str(payload["raw_value"])) if payload.get("raw_value") is not None else None,
         raw_unit=payload.get("raw_unit"),
-        normalized_value=None,  # filled by the unit-normalization service
-        normalized_unit=None,
+        normalized_value=normalized_value,
+        normalized_unit=normalized_unit,
         qualitative_value=payload.get("qualitative_value"),
         status=new_status,
         created_by=actor.id,

@@ -294,3 +294,22 @@ def test_value_history_never_overwritten(client, ctx):
     versions = [v["version"] for v in detail["values"]]
     assert versions == sorted(versions, reverse=True)
     assert len(set(versions)) == len(versions)
+
+
+def test_value_save_normalizes_units(client, ctx):
+    """170,000 kWh entered in the demo flow normalizes to 170 MWh."""
+    owner_h = _login(client, "owner-alpha@example.local")
+    rows = _assignments(client, owner_h, entity_id=str(ctx["plant_alpha"]), status="IN_PROGRESS")
+    target = next(a for a in rows if a["metric_code"] == "C-P6-GRID-NONRENEWABLE-MWH")
+    detail = client.get(f"/api/v1/assignments/{target['id']}", headers=owner_h).json()
+    saved = client.post(
+        f"/api/v1/assignments/{target['id']}/value",
+        json={"action": "SUBMIT", "raw_value": 170000, "raw_unit": "kWh",
+              "expected_last_version": detail["latest_version"]},
+        headers=owner_h,
+    )
+    assert saved.status_code == 201
+    assert saved.json()["raw_value"] == 170000
+    assert saved.json()["raw_unit"] == "kWh"
+    assert saved.json()["normalized_value"] == 170.0
+    assert saved.json()["normalized_unit"] == "MWh"
