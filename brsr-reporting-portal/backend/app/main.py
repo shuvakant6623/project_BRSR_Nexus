@@ -12,6 +12,7 @@ from app.api.errors import register_exception_handlers
 from app.api.users import router as users_router
 from app.auth.router import router as auth_router
 from app.config import get_settings
+from app.collection.router import router as collection_router
 from app.entities.router import router as entities_router
 from app.framework.router import router as framework_router
 from app.logging import configure_logging, request_id_var
@@ -75,6 +76,7 @@ def create_app() -> FastAPI:
     app.include_router(users_router)
     app.include_router(entities_router)
     app.include_router(framework_router)
+    app.include_router(collection_router)
 
     register_exception_handlers(app)
     return app

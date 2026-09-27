@@ -42,6 +42,12 @@ def migrated_engine(test_db_url):
     os.environ["DATABASE_URL"] = test_db_url
     cfg = Config("/app/alembic.ini")
     cfg.set_main_option("sqlalchemy.url", test_db_url)
+    # reset schema so every test session starts from a deterministic state
+    admin_engine = create_engine(test_db_url, isolation_level="AUTOCOMMIT")
+    with admin_engine.connect() as conn:
+        conn.execute(text("DROP SCHEMA public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
+    admin_engine.dispose()
     command.upgrade(cfg, "head")
     engine = create_engine(test_db_url)
     yield engine

@@ -14,6 +14,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
   ],
   ESG_MANAGER: [
     { href: "/", label: "Overview" },
+    { href: "/review", label: "Review Queue" },
     { href: "/entities", label: "Entities" },
     { href: "/framework", label: "Framework" },
   ],
@@ -23,6 +24,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
   ],
   REVIEWER: [
     { href: "/", label: "Overview" },
+    { href: "/review", label: "Review Queue" },
     { href: "/framework", label: "Framework" },
   ],
   ASSESSOR: [
@@ -31,6 +33,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
   ],
   DATA_OWNER: [
     { href: "/", label: "My Dashboard" },
+    { href: "/assignments", label: "My Assignments" },
     { href: "/framework", label: "Framework" },
   ],
 };

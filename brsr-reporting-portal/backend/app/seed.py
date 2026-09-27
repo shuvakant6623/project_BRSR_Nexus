@@ -397,6 +397,12 @@ def seed(db: Session) -> None:
     current_fv, previous_fv = _seed_framework(db)
     _seed_periods(db, current_fv, previous_fv)
 
+    from app.seed_demo import seed_collection
+
+    manager = db.scalar(select(AppUser).where(AppUser.email == "manager@example.local"))
+    reviewer = db.scalar(select(AppUser).where(AppUser.email == "reviewer@example.local"))
+    seed_collection(db, entities, manager, reviewer)
+
     db.commit()
     logger.info("seed complete: %d entities, %d users", len(entities), len(db.scalars(select(AppUser)).all()))
 
