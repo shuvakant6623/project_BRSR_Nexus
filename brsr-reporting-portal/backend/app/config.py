@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     s3_bucket: str = "brsr-evidence"
 
     # JWT
-    jwt_secret: str = "change-me"
+    jwt_secret: str = "dev-only-secret-change-me-in-production-32b"
     jwt_algorithm: str = "HS256"
     jwt_access_expiry_minutes: int = 60
     jwt_refresh_expiry_days: int = 7

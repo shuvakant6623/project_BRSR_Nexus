@@ -39,8 +39,8 @@ export default function Home() {
           {user.entity_scope_ids.length} entit{user.entity_scope_ids.length === 1 ? "y" : "ies"}.
         </p>
         <p className="hint">
-          Role-specific navigation (assignments, review queue, consolidation, reports) appears as
-          those modules land in subsequent phases.
+          Role-specific screens (assignments, review queue, consolidation, reports) appear as those
+          modules land in subsequent phases.
         </p>
       </section>
     </main>

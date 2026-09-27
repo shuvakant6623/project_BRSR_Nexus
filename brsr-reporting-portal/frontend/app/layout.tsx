@@ -1,3 +1,4 @@
+import { AppShellNav } from "@/components/AppShellNav";
 import { AuthProvider } from "@/components/AuthProvider";
 import type { Metadata } from "next";
 import "./globals.css";
@@ -13,7 +14,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <AppShellNav />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
