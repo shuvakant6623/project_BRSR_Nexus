@@ -36,4 +36,20 @@ dependency is down.
 
 ## Demo credentials
 
-Introduced in the Auth phase.
+All demo accounts use the password `Demo@12345` (development/demo only).
+
+| Email | Role |
+| ----- | ---- |
+| admin@example.local | ADMIN |
+| manager@example.local | ESG_MANAGER |
+| reviewer@example.local | REVIEWER |
+| management@example.local | MANAGEMENT |
+| assessor@example.local | ASSESSOR |
+| owner-alpha@example.local | DATA_OWNER (Plant Alpha) |
+| owner-beta@example.local | DATA_OWNER (Plant Beta) |
+| owner-gamma@example.local | DATA_OWNER (Plant Gamma) |
+| owner-delta@example.local | DATA_OWNER (Plant Delta) |
+| owner-projc@example.local | DATA_OWNER (Project C) |
+| owner-eps@example.local | DATA_OWNER (Plant Epsilon) |
+
+Seeded via `python -m app.seed` (idempotent; see Makefile `make seed`).

@@ -69,3 +69,87 @@ body {
 .hint a {
   color: var(--accent);
 }
+
+/* --- auth --- */
+.auth-main {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 24rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-card h1 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.auth-sub {
+  color: var(--muted);
+  margin: 0;
+}
+
+.auth-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.auth-card input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
+}
+
+.auth-card button {
+  background: var(--accent);
+  color: #052e22;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-card button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.auth-error {
+  border: 1px solid var(--error);
+  color: var(--error);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.userchip {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.ghostbtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}

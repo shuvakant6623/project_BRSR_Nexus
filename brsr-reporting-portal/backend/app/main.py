@@ -8,6 +8,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import health
+from app.api.errors import register_exception_handlers
+from app.api.users import router as users_router
+from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.logging import configure_logging, request_id_var
 
@@ -66,6 +69,10 @@ def create_app() -> FastAPI:
         return response
 
     app.include_router(health.router)
+    app.include_router(auth_router)
+    app.include_router(users_router)
+
+    register_exception_handlers(app)
     return app
 
 
