@@ -10,18 +10,29 @@ const NAV: Record<string, { href: string; label: string }[]> = {
   ADMIN: [
     { href: "/", label: "Overview" },
     { href: "/entities", label: "Entities" },
+    { href: "/framework", label: "Framework" },
   ],
   ESG_MANAGER: [
     { href: "/", label: "Overview" },
     { href: "/entities", label: "Entities" },
+    { href: "/framework", label: "Framework" },
   ],
   MANAGEMENT: [
     { href: "/", label: "Dashboard" },
-    { href: "/entities", label: "Entities" },
+    { href: "/framework", label: "Framework" },
   ],
-  REVIEWER: [{ href: "/", label: "Overview" }],
-  ASSESSOR: [{ href: "/", label: "Overview" }],
-  DATA_OWNER: [{ href: "/", label: "My Dashboard" }],
+  REVIEWER: [
+    { href: "/", label: "Overview" },
+    { href: "/framework", label: "Framework" },
+  ],
+  ASSESSOR: [
+    { href: "/", label: "Overview" },
+    { href: "/framework", label: "Framework" },
+  ],
+  DATA_OWNER: [
+    { href: "/", label: "My Dashboard" },
+    { href: "/framework", label: "Framework" },
+  ],
 };
 
 export function AppShellNav() {

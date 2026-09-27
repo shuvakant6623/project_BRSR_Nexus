@@ -228,3 +228,104 @@ body {
 .state.error {
   color: var(--error);
 }
+
+/* --- framework page --- */
+.version-picker {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.pill {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.pill.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.data-table th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+  vertical-align: top;
+}
+
+.mono {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+}
+
+.metric-group {
+  margin-bottom: 2rem;
+}
+
+.metric-group h2 {
+  font-size: 1rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.sev {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sev.blocking { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+.sev.warning { background: rgba(245, 158, 11, 0.15); color: var(--warn); }
+.sev.info { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+
+.badge.core { background: rgba(16, 185, 129, 0.15); color: var(--accent); }
+.badge.evidence { background: rgba(167, 139, 250, 0.15); color: #a78bfa; }
+.badge.required { background: rgba(148, 163, 184, 0.15); color: var(--muted); }
+
+.badge.core, .badge.evidence, .badge.required {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
