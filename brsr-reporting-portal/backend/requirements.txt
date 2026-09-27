@@ -7,3 +7,5 @@ psycopg[binary]>=3.2,<4.0
 redis>=5.2,<6.0
 minio>=7.2,<8.0
 python-dotenv>=1.0,<2.0
+alembic>=1.14,<2.0
+pytest>=8.3,<9.0
