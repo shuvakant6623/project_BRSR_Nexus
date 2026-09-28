@@ -16,6 +16,8 @@ from app.collection.router import router as collection_router
 from app.entities.router import router as entities_router
 from app.framework.router import router as framework_router
 from app.logging import configure_logging, request_id_var
+from app.reporting.router import router as reporting_periods_router
+from app.validation.router import router as validation_router
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +79,8 @@ def create_app() -> FastAPI:
     app.include_router(entities_router)
     app.include_router(framework_router)
     app.include_router(collection_router)
+    app.include_router(validation_router)
+    app.include_router(reporting_periods_router)
 
     register_exception_handlers(app)
     return app

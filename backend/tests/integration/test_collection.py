@@ -157,10 +157,11 @@ def test_concurrent_edit_conflict(client, ctx):
 def test_full_review_lifecycle(client, ctx):
     owner_h = _login(client, "owner-gamma@example.local")
     reviewer_h = _login(client, "reviewer@example.local")
-    # pick a SUBMITTED assignment owned by owner-gamma (she owns Plant Gamma)
+    # pick a SUBMITTED non-core assignment (A-REVENUE): the review-stage sweep
+    # raises BLOCKING evidence exceptions for BRSR Core metrics (no evidence
+    # exists until the Evidence phase), which would legitimately block approval
     gamma_rows = _assignments(client, owner_h, status="SUBMITTED")
-    assert gamma_rows, "seeded SUBMITTED assignments for Plant Gamma must exist"
-    target_id = gamma_rows[0]["id"]
+    target_id = next(a["id"] for a in gamma_rows if a["metric_code"] == "A-REVENUE")
 
     started = client.post(
         f"/api/v1/assignments/{target_id}/review",

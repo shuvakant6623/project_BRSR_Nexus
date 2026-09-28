@@ -93,7 +93,11 @@ def _load_scoped(db: Session, assignment_id: uuid.UUID, user: AppUser,
     assignment = db.get(Assignment, assignment_id)
     if assignment is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found")
-    if user.role not in (UserRole.ADMIN, UserRole.ESG_MANAGER) and assignment.entity_id not in scoped_ids:
+    # DATA_OWNER works their own assignments regardless of entity-scope grants
+    # (mirrors visible_assignment_ids); REVIEWER/MANAGEMENT rely on scopes.
+    is_owner = user.role == UserRole.DATA_OWNER and assignment.owner_user_id == user.id
+    if not is_owner and user.role not in (UserRole.ADMIN, UserRole.ESG_MANAGER) \
+            and assignment.entity_id not in scoped_ids:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Assignment outside your authorized scope")
     return assignment

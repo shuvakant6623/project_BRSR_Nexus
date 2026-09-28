@@ -223,16 +223,6 @@ def save_value(
 
     metric = _metric_for_assignment(db, assignment)
 
-    if action == "SUBMIT":
-        _structural_validate(metric, payload)
-        new_status = MetricValueStatus.SUBMITTED
-        new_assignment_status = AssignmentStatus.SUBMITTED
-    elif action == "SAVE_DRAFT":
-        new_status = MetricValueStatus.IN_PROGRESS
-        new_assignment_status = AssignmentStatus.IN_PROGRESS
-    else:
-        raise CollectionError("action must be SAVE_DRAFT or SUBMIT", 422)
-
     # unit normalization (spec §10): every numeric value stores its canonical form
     normalized_value = normalized_unit = None
     if payload.get("raw_value") is not None:
@@ -245,6 +235,43 @@ def save_value(
             )
         except UnitConversionError as exc:
             raise CollectionError(str(exc), 422)
+
+    if action == "SUBMIT":
+        _structural_validate(metric, payload)
+        # submit-stage gate: BLOCKING rules are evaluated against the incoming
+        # payload (not the previously persisted version, which may not exist on
+        # a first submission) and refuse the submission with 422. The full
+        # deterministic sweep (cross-field, YoY, evidence, ...) runs at review.
+        from types import SimpleNamespace
+
+        from app.validation import engine as validation_engine
+
+        candidate = SimpleNamespace(
+            raw_value=Decimal(str(payload["raw_value"]))
+            if payload.get("raw_value") is not None else None,
+            raw_unit=payload.get("raw_unit"),
+            normalized_value=normalized_value,
+            normalized_unit=normalized_unit,
+            qualitative_value=payload.get("qualitative_value"),
+            version=(last.version if last else 0) + 1,
+        )
+        blocking = [
+            f
+            for f in validation_engine.evaluate_assignment(db, assignment, "submit", value=candidate)
+            if f.rule.severity == ValidationSeverity.BLOCKING
+        ]
+        if blocking:
+            raise CollectionError(
+                "Submission blocked by validation: " + "; ".join(f.message for f in blocking),
+                422,
+            )
+        new_status = MetricValueStatus.SUBMITTED
+        new_assignment_status = AssignmentStatus.SUBMITTED
+    elif action == "SAVE_DRAFT":
+        new_status = MetricValueStatus.IN_PROGRESS
+        new_assignment_status = AssignmentStatus.IN_PROGRESS
+    else:
+        raise CollectionError("action must be SAVE_DRAFT or SUBMIT", 422)
 
     current_status = assignment.status
     if current_status == AssignmentStatus.LOCKED:
@@ -310,6 +337,13 @@ def review(
     if action == "START_REVIEW":
         if current != AssignmentStatus.SUBMITTED:
             raise CollectionError(f"Cannot start review from status {current.value}")
+        # review-stage validation sweep: cross-field, cross-section, YoY,
+        # duplicate, evidence completeness, logical consistency
+        from app.validation import engine as validation_engine
+
+        validation_engine.run_for_assignments(
+            db, [assignment], "review", actor=actor, request_id=request_id
+        )
         new_status = AssignmentStatus.UNDER_REVIEW
         audit_action = AuditAction.REVIEWED
     elif action == "APPROVE":

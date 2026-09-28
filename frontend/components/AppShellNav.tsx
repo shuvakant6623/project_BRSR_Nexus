@@ -15,25 +15,30 @@ const NAV: Record<string, { href: string; label: string }[]> = {
   ESG_MANAGER: [
     { href: "/", label: "Overview" },
     { href: "/review", label: "Review Queue" },
+    { href: "/exceptions", label: "Exceptions" },
     { href: "/entities", label: "Entities" },
     { href: "/framework", label: "Framework" },
   ],
   MANAGEMENT: [
     { href: "/", label: "Dashboard" },
+    { href: "/exceptions", label: "Exceptions" },
     { href: "/framework", label: "Framework" },
   ],
   REVIEWER: [
     { href: "/", label: "Overview" },
     { href: "/review", label: "Review Queue" },
+    { href: "/exceptions", label: "Exceptions" },
     { href: "/framework", label: "Framework" },
   ],
   ASSESSOR: [
     { href: "/", label: "Overview" },
+    { href: "/exceptions", label: "Exceptions" },
     { href: "/framework", label: "Framework" },
   ],
   DATA_OWNER: [
     { href: "/", label: "My Dashboard" },
     { href: "/assignments", label: "My Assignments" },
+    { href: "/exceptions", label: "My Exceptions" },
     { href: "/framework", label: "Framework" },
   ],
 };
