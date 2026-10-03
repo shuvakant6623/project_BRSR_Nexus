@@ -153,6 +153,9 @@ export default function ConsolidationPage() {
               <div className="kpi-label">contributing values</div>
             </div>
           </div>
+          <a className="linkbtn" href={`/lineage/${trace.entity_id}/${trace.metric_code}/${trace.period_id}`}>
+            Where did this number come from? →
+          </a>
           {trace.contributions.length > 0 && (
             <table className="data-table">
               <thead>

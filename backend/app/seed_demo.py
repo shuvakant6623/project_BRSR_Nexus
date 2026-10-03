@@ -377,7 +377,7 @@ def _seed_derived_metrics(db: Session, entities, periods, owners, esg_manager) -
                 )
                 db.add(assignment)
                 db.flush()
-                db.add(MetricValue(
+                mv = MetricValue(
                     assignment_id=assignment.id, version=1,
                     raw_value=Decimal(str(val)), raw_unit=unit,
                     normalized_value=Decimal(str(val)), normalized_unit=unit,
@@ -385,5 +385,12 @@ def _seed_derived_metrics(db: Session, entities, periods, owners, esg_manager) -
                     formula_version=1, formula_inputs=inputs,
                     status=MetricValueStatus.LOCKED, created_by=owner.id,
                     submitted_by=owner.id, submitted_at=period.end_date,
-                ))
+                )
+                db.add(mv)
                 db.flush()
+                record(
+                    db, action=AuditAction.SUBMITTED, object_type="metric_value",
+                    object_id=mv.id, actor_id=owner.id, actor_label=owner.email,
+                    entity_id=plant.id, metric_code=code,
+                    new_value={"version": 1, "result": str(val), "formula": formula_code},
+                )
