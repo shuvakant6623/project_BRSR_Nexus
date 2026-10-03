@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/AuthProvider";
+import { StyledSelect } from "@/components/StyledSelect";
 import {
   EXCEPTION_STATUS_COLORS,
   explainException,
@@ -103,12 +104,18 @@ export default function ExceptionsPage() {
       {notice && <div className="form-success">{notice}</div>}
 
       <div className="filter-row">
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">All statuses</option>
-          <option value="OPEN">Open</option>
-          <option value="EXPLAINED">Explained</option>
-          <option value="RESOLVED">Resolved</option>
-        </select>
+        <StyledSelect
+          ariaLabel="Exception status filter"
+          value={statusFilter}
+          options={[
+            { value: "", label: "All statuses" },
+            { value: "OPEN", label: "Open" },
+            { value: "EXPLAINED", label: "Explained" },
+            { value: "RESOLVED", label: "Resolved" },
+          ]}
+          onChange={setStatusFilter}
+          placeholder="All statuses"
+        />
         {canRun && (
           <button className="primarybtn" disabled={busy} onClick={onRun}>
             {busy ? "Running…" : "Run validation"}

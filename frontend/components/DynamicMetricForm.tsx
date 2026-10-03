@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { StyledSelect } from "@/components/StyledSelect";
 import { MetricMeta } from "@/features/collection/collection";
 
 export interface FormValue {
@@ -94,17 +95,12 @@ export function DynamicMetricForm({
           {units.length > 0 && (
             <label>
               Unit
-              <select
+              <StyledSelect
+                ariaLabel="Unit"
                 value={value.raw_unit ?? units[0]}
-                disabled={disabled}
-                onChange={(e) => setValue({ ...value, raw_unit: e.target.value })}
-              >
-                {units.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
+                options={units.map((u) => ({ value: u, label: u }))}
+                onChange={(u) => setValue({ ...value, raw_unit: u })}
+              />
             </label>
           )}
         </div>
@@ -125,16 +121,17 @@ export function DynamicMetricForm({
       {isCategorical && (
         <label>
           Selection
-          <select
+          <StyledSelect
+            ariaLabel="Selection"
             value={value.qualitative_value ?? ""}
-            disabled={disabled}
-            onChange={(e) => setValue({ ...value, qualitative_value: e.target.value })}
-          >
-            <option value="">— select —</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-            <option value="partial">Partial</option>
-          </select>
+            options={[
+              { value: "yes", label: "Yes" },
+              { value: "no", label: "No" },
+              { value: "partial", label: "Partial" },
+            ]}
+            onChange={(v) => setValue({ ...value, qualitative_value: v })}
+            placeholder="— select —"
+          />
         </label>
       )}
 

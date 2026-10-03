@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { StyledSelect } from "@/components/StyledSelect";
 import { Assignment, listAssignments, STATUS_COLORS } from "@/features/collection/collection";
 
 export default function AssignmentsPage() {
@@ -25,12 +26,16 @@ export default function AssignmentsPage() {
       <h1>My Assignments</h1>
       <p className="hint">{rows.length} assignments in your authorized scope.</p>
       <div className="filter-row">
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">All statuses</option>
-          {Object.keys(STATUS_COLORS).map((s) => (
-            <option key={s} value={s}>{s.replace("_", " ")}</option>
-          ))}
-        </select>
+        <StyledSelect
+          ariaLabel="Status filter"
+          value={statusFilter}
+          options={[
+            { value: "", label: "All statuses" },
+            ...Object.keys(STATUS_COLORS).map((s) => ({ value: s, label: s.replace("_", " ") })),
+          ]}
+          onChange={setStatusFilter}
+          placeholder="All statuses"
+        />
       </div>
       <table className="data-table">
         <thead>

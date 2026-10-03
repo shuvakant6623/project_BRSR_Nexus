@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/components/AuthProvider";
+import { StyledSelect } from "@/components/StyledSelect";
 import { api } from "@/lib/api";
 import { EntityNode, listEntities } from "@/features/entities/entities";
 import {
@@ -93,28 +94,40 @@ export default function ConsolidationPage() {
         percentages are never averaged.
       </p>
       <div className="filter-row">
-        <select value={periodId} onChange={(e) => setPeriodId(e.target.value)}>
-          {periods.map((p) => (
-            <option key={p.id} value={p.id}>{p.label}</option>
-          ))}
-        </select>
-        <select value={metricCode} onChange={(e) => setMetricCode(e.target.value)}>
-          {METRICS.map((m) => (
-            <option key={m.code} value={m.code}>{m.label}</option>
-          ))}
-        </select>
-        <select value={entityId} onChange={(e) => setEntityId(e.target.value)}>
-          <option value="">— select entity —</option>
-          {entities.map((e) => (
-            <option key={e.id} value={e.id}>{e.name}</option>
-          ))}
-        </select>
+        <StyledSelect
+          ariaLabel="Reporting period"
+          value={periodId}
+          options={periods.map((p) => ({ value: p.id, label: p.label }))}
+          onChange={setPeriodId}
+          placeholder="Reporting period"
+        />
+        <StyledSelect
+          ariaLabel="Metric"
+          value={metricCode}
+          options={METRICS.map((m) => ({ value: m.code, label: m.label }))}
+          onChange={setMetricCode}
+          placeholder="Metric"
+        />
+        <StyledSelect
+          ariaLabel="Entity"
+          value={entityId}
+          options={entities.map((e) => ({ value: e.id, label: e.name }))}
+          onChange={setEntityId}
+          placeholder="— select entity —"
+        />
         {canRecompute && (
           <button className="primarybtn" disabled={busy || !periodId} onClick={onRecompute}>
             {busy ? "Recomputing…" : "Recompute"}
           </button>
         )}
       </div>
+
+      {!entityId && (
+        <div className="state">
+          Pick an entity above to inspect its consolidated figure — try{" "}
+          <strong>MEIL Group</strong> for the group-level view.
+        </div>
+      )}
 
       {error && <div className="auth-error">{error}</div>}
       {notice && <div className="form-success">{notice}</div>}
