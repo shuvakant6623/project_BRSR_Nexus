@@ -71,6 +71,7 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-brsr}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-brsr-secret}
       S3_BUCKET: ${S3_BUCKET:-brsr-evidence}
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-}
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-32b}
       CORS_ORIGINS: http://localhost:3000
     ports:
@@ -88,6 +89,34 @@ services:
       timeout: 5s
       retries: 10
       start_period: 15s
+
+  celery-worker:
+    build: ./backend
+    command: celery -A app.workers.celery_app.celery_app worker --loglevel=info --concurrency=2
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-brsr}:${POSTGRES_PASSWORD:-brsr}@postgres:5432/${POSTGRES_DB:-brsr}
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-brsr}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-brsr-secret}
+      S3_BUCKET: ${S3_BUCKET:-brsr-evidence}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-32b}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  celery-beat:
+    build: ./backend
+    command: celery -A app.workers.celery_app.celery_app beat --loglevel=info
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
 
   frontend:
     build:

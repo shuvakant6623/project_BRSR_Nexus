@@ -117,6 +117,9 @@ def test_upload_stores_in_minio_with_sha256(client, ctx):
     assert dl.status_code == 200
     url = dl.json()["url"]
     assert "brsr-evidence" in url
+    # the presigned host may be rewritten for browsers; inside the test
+    # container fetch via the internal MinIO host
+    url = url.replace("localhost:19000", "minio:9000")
     import urllib.request
 
     with urllib.request.urlopen(url) as resp:

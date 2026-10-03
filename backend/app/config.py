@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     s3_access_key: str = "brsr"
     s3_secret_key: str = "brsr-secret"
     s3_bucket: str = "brsr-evidence"
+    s3_public_endpoint: str = ""
 
     # JWT
     jwt_secret: str = "dev-only-secret-change-me-in-production-32b"

@@ -2,7 +2,6 @@
 signed time-limited downloads, soft delete. Private bucket — no public access.
 """
 import uuid
-from datetime import timedelta
 from io import BytesIO
 
 from sqlalchemy import select
@@ -130,10 +129,7 @@ def upload_evidence(
 
 def download_url(evidence: Evidence, expires_hours: int = 1) -> str:
     """Pre-signed, time-limited GET URL for the private object."""
-    settings = get_settings()
-    return storage.get_client().presigned_get_object(
-        settings.s3_bucket, evidence.object_key, expires=timedelta(hours=expires_hours)
-    )
+    return storage.presigned_get(evidence.object_key, expires_hours)
 
 
 def soft_delete(
