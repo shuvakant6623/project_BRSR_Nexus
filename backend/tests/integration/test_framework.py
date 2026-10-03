@@ -241,3 +241,24 @@ def test_previous_version_has_lineage_mappings(client, seeded, version_ids):
         ).scalar()
     assert direct >= 20
     assert renamed >= 1
+
+
+def test_trends_respect_lineage_gaps(client, seeded, version_ids):
+    """Trends must GAP for metrics absent in a period's framework version
+    instead of silently comparing differently-defined metrics."""
+    r = client.get(
+        "/api/v1/trends/C-P6-WATER-DISCHARGE",
+        headers=_login(client, "management@example.local"),
+    )
+    assert r.status_code == 200
+    points = {p["period_label"]: p for p in r.json()["points"]}
+    assert points["FY2024-25"]["continuity"] == "gap"
+    assert points["FY2024-25"]["value"] is None
+    assert points["FY2025-26"]["continuity"] in ("direct", "gap")
+
+    r = client.get(
+        "/api/v1/trends/C-P6-TOTAL-ENERGY",
+        headers=_login(client, "management@example.local"),
+    )
+    points = {p["period_label"]: p for p in r.json()["points"]}
+    assert points["FY2024-25"]["continuity"] in ("direct", "remapped")

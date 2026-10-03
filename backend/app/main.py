@@ -22,6 +22,7 @@ from app.evidence.router import router as evidence_router
 from app.framework.router import router as framework_router
 from app.lineage.router import router as lineage_router
 from app.reporting.router import router as reporting_router
+from app.trends.router import router as trends_router
 from app.logging import configure_logging, request_id_var
 from app.reporting.router import router as reporting_periods_router
 from app.validation.router import router as validation_router
@@ -92,6 +93,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard_router)
     app.include_router(lineage_router)
     app.include_router(reporting_router)
+    app.include_router(trends_router)
     app.include_router(audit_router)
     app.include_router(evidence_router)
     app.include_router(reporting_periods_router)
