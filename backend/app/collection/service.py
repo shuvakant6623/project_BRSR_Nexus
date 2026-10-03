@@ -318,6 +318,26 @@ def save_value(
                    "raw_unit": value.raw_unit, "action": action},
         request_id=request_id,
     )
+
+    # dependent derived metrics recompute when an input changes; failures are
+    # logged, never silent, and never block the owner's save
+    if value.raw_value is not None:
+        import logging
+
+        from app.calculation import service as calc_service
+
+        logger = logging.getLogger(__name__)
+        try:
+            calc_service.recompute_dependents(
+                db, assignment.framework_version_id, assignment.entity_id,
+                assignment.period_id, assignment.metric_code, actor=actor,
+                request_id=request_id,
+            )
+        except Exception as exc:
+            logger.warning(
+                "dependent recompute failed for %s/%s: %s",
+                assignment.entity_id, assignment.metric_code, exc,
+            )
     return value
 
 
@@ -381,6 +401,13 @@ def review(
     if value is not None:
         value.status = VALUE_STATUS_FOR_ASSIGNMENT[new_status]
     db.flush()
+
+    if new_status == AssignmentStatus.APPROVED:
+        # consolidated ancestors of this entity are now potentially stale
+        from app.consolidation.service import mark_stale_upstream
+
+        mark_stale_upstream(db, assignment.entity_id, assignment.metric_code,
+                            assignment.period_id)
     record(
         db, action=audit_action, object_type="assignment", object_id=assignment.id,
         actor_id=actor.id, actor_label=actor.email,

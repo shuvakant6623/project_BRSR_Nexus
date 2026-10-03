@@ -52,6 +52,9 @@ class ValueOut(BaseModel):
     normalized_unit: str | None
     qualitative_value: str | None
     status: str
+    is_calculated: bool = False
+    formula_version: int | None = None
+    formula_inputs: dict | None = None
     submitted_at: str | None
 
 
@@ -84,6 +87,8 @@ def _value_out(v: MetricValue) -> ValueOut:
         normalized_value=float(v.normalized_value) if v.normalized_value is not None else None,
         normalized_unit=v.normalized_unit,
         qualitative_value=v.qualitative_value, status=v.status.value,
+        is_calculated=v.is_calculated, formula_version=v.formula_version,
+        formula_inputs=v.formula_inputs,
         submitted_at=v.submitted_at.isoformat() if v.submitted_at else None,
     )
 

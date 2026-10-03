@@ -34,6 +34,9 @@ export interface ValueRow {
   normalized_unit: string | null;
   qualitative_value: string | null;
   status: string;
+  is_calculated: boolean;
+  formula_version: number | null;
+  formula_inputs: Record<string, string> | null;
   submitted_at: string | null;
 }
 

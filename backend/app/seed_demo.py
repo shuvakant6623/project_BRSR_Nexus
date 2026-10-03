@@ -24,6 +24,7 @@ from app.models import (
     AppUser,
     Assignment,
     Entity,
+    FormulaDefinition,
     FrameworkVersion,
     MetricDefinition,
     MetricValue,
@@ -283,5 +284,95 @@ def seed_collection(db: Session, entities: dict[str, Entity], esg_manager: AppUs
         db.flush()
         logger.info("demo anomaly: Beta FY25 employees=252 vs workforce=240")
 
+    _seed_derived_metrics(db, entities, periods, owners, esg_manager)
+
     db.flush()
     logger.info("collection demo data seeded")
+
+
+DERIVED_METRICS = ("C-P6-TOTAL-ENERGY", "C-P6-SCOPE1-TCO2E", "C-P6-TOTAL-GHG")
+
+
+def _formula_id(db: Session, framework_version_id, code: str):
+    definition = db.scalar(
+        select(FormulaDefinition).where(
+            FormulaDefinition.framework_version_id == framework_version_id,
+            FormulaDefinition.code == code,
+        )
+    )
+    return definition.id if definition else None
+
+
+def _seed_derived_metrics(db: Session, entities, periods, owners, esg_manager) -> None:
+    """FY2024-25: computed historical values (locked, with full formula
+    lineage). FY2025-26: assignment shells left empty for the calculation
+    engine to fill during the demo."""
+    from app.models import FormulaDefinition
+
+    for plant_name in FY25_STATUS:
+        plant = entities.get(plant_name)
+        if plant is None:
+            continue
+        owner = owners[OWNER_FOR_PLANT[plant_name]]
+        for fy_label, locked in (("FY2024-25", True), ("FY2025-26", False)):
+            period = periods[fy_label]
+            fv_id = period.framework_version_id
+            if not locked:
+                for code in DERIVED_METRICS:
+                    _seed_assignment_value(
+                        db, metric_code=code, entity=plant, period=period, owner=owner,
+                        status_a=AssignmentStatus.IN_PROGRESS, value=None, raw_unit=None,
+                        created_by=esg_manager,
+                    )
+                continue
+
+            renewable = _plant_value("C-P6-GRID-RENEWABLE-MWH", plant_name, fy25=False)
+            nonrenewable = _plant_value("C-P6-GRID-NONRENEWABLE-MWH", plant_name, fy25=False)
+            diesel = _plant_value("C-P6-DIESEL-LITRES", plant_name, fy25=False)
+            scope2 = _plant_value("C-P6-SCOPE2-TCO2E", plant_name, fy25=False)
+            total_energy = renewable + nonrenewable
+            scope1 = round(diesel * 2.68 / 1000, 8)
+            total_ghg = round(scope1 + scope2, 8)
+
+            computed = {
+                "C-P6-TOTAL-ENERGY": (
+                    total_energy, "MWh", "F-TOTAL-ENERGY",
+                    {"C-P6-GRID-RENEWABLE-MWH": str(renewable),
+                     "C-P6-GRID-NONRENEWABLE-MWH": str(nonrenewable)},
+                ),
+                "C-P6-SCOPE1-TCO2E": (
+                    scope1, "tCO2e", "F-SCOPE1",
+                    {"C-P6-DIESEL-LITRES": str(diesel), "DIESEL_EF_KG_PER_LITRE": "2.68"},
+                ),
+                "C-P6-TOTAL-GHG": (
+                    total_ghg, "tCO2e", "F-TOTAL-GHG",
+                    {"C-P6-SCOPE1-TCO2E": str(scope1), "C-P6-SCOPE2-TCO2E": str(scope2)},
+                ),
+            }
+            for code, (val, unit, formula_code, inputs) in computed.items():
+                exists = db.scalar(
+                    select(Assignment).where(
+                        Assignment.metric_code == code,
+                        Assignment.entity_id == plant.id,
+                        Assignment.period_id == period.id,
+                    )
+                )
+                if exists is not None:
+                    continue
+                assignment = Assignment(
+                    metric_code=code, framework_version_id=fv_id, entity_id=plant.id,
+                    period_id=period.id, owner_user_id=owner.id, due_date=period.end_date,
+                    status=AssignmentStatus.LOCKED, created_by=esg_manager.id,
+                )
+                db.add(assignment)
+                db.flush()
+                db.add(MetricValue(
+                    assignment_id=assignment.id, version=1,
+                    raw_value=Decimal(str(val)), raw_unit=unit,
+                    normalized_value=Decimal(str(val)), normalized_unit=unit,
+                    is_calculated=True, formula_id=_formula_id(db, fv_id, formula_code),
+                    formula_version=1, formula_inputs=inputs,
+                    status=MetricValueStatus.LOCKED, created_by=owner.id,
+                    submitted_by=owner.id, submitted_at=period.end_date,
+                ))
+                db.flush()

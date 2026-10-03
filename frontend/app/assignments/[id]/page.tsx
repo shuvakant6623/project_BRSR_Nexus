@@ -98,7 +98,7 @@ export default function AssignmentDetailPage() {
             <tbody>
               {values.map((v: ValueRow) => (
                 <tr key={v.id}>
-                  <td>v{v.version}</td>
+                  <td>v{v.version}{v.is_calculated && <span className="badge core"> calc</span>}</td>
                   <td className="mono">{v.raw_value ?? v.qualitative_value ?? "—"}</td>
                   <td>{v.raw_unit ?? "—"}</td>
                   <td className="mono">{v.normalized_value != null ? `${v.normalized_value} ${v.normalized_unit ?? ""}` : "—"}</td>

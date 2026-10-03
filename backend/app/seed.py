@@ -126,33 +126,34 @@ def _seed_framework(db: Session) -> tuple[FrameworkVersion, FrameworkVersion]:
 
     # ---- formulas (must exist before metrics reference them) ----
     for f in seeddata.FORMULAS:
-        definition = db.scalar(
-            select(FormulaDefinition).where(
-                FormulaDefinition.framework_version_id == current.id,
-                FormulaDefinition.code == f["code"],
-            )
-        )
-        if definition is None:
-            definition = FormulaDefinition(
-                framework_version_id=current.id, code=f["code"], name=f["name"],
-                description=f["description"],
-            )
-            db.add(definition)
-            db.flush()
         from sqlalchemy import exists as sa_exists
 
-        has_version = db.scalar(
-            select(sa_exists().where(
-                FormulaVersion.formula_definition_id == definition.id,
-                FormulaVersion.version == 1,
-            ))
-        )
-        if not has_version:
-            db.add(FormulaVersion(
-                formula_definition_id=definition.id, version=1,
-                expression=f["expression"], input_metric_codes=f["inputs"],
-                constants=f["constants"],
-            ))
+        for fv in (current, previous):
+            definition = db.scalar(
+                select(FormulaDefinition).where(
+                    FormulaDefinition.framework_version_id == fv.id,
+                    FormulaDefinition.code == f["code"],
+                )
+            )
+            if definition is None:
+                definition = FormulaDefinition(
+                    framework_version_id=fv.id, code=f["code"], name=f["name"],
+                    description=f["description"],
+                )
+                db.add(definition)
+                db.flush()
+            has_version = db.scalar(
+                select(sa_exists().where(
+                    FormulaVersion.formula_definition_id == definition.id,
+                    FormulaVersion.version == 1,
+                ))
+            )
+            if not has_version:
+                db.add(FormulaVersion(
+                    formula_definition_id=definition.id, version=1,
+                    expression=f["expression"], input_metric_codes=f["inputs"],
+                    constants=f["constants"],
+                ))
     db.flush()
 
     def _metric_payload(m: dict) -> dict:
