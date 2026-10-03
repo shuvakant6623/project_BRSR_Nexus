@@ -12,6 +12,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/", label: "Overview" },
     { href: "/entities", label: "Entities" },
     { href: "/framework", label: "Framework" },
+    { href: "/audit", label: "Audit" },
   ],
   ESG_MANAGER: [
     { href: "/", label: "Overview" },
@@ -20,6 +21,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/consolidation", label: "Consolidation" },
     { href: "/entities", label: "Entities" },
     { href: "/framework", label: "Framework" },
+    { href: "/audit", label: "Audit" },
   ],
   MANAGEMENT: [
     { href: "/", label: "Dashboard" },

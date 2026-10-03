@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import health
 from app.api.errors import register_exception_handlers
 from app.api.users import router as users_router
+from app.audit.router import router as audit_router
 from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.calculation.router import router as calculation_router
@@ -91,6 +92,7 @@ def create_app() -> FastAPI:
     app.include_router(periods_router)
     app.include_router(dashboard_router)
     app.include_router(lineage_router)
+    app.include_router(audit_router)
     app.include_router(evidence_router)
     app.include_router(reporting_periods_router)
 
