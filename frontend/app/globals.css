@@ -947,3 +947,12 @@ input[type="password"]:focus {
   border-bottom: 1px solid rgba(94, 118, 153, 0.12);
 }
 .audit-row:last-child { border-bottom: none; }
+
+.notif-unread { border-color: rgba(56, 189, 248, 0.45); }
+.notif-unread::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--sky);
+}

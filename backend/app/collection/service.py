@@ -34,6 +34,7 @@ from app.models.enums import (
     AssignmentStatus,
     AuditAction,
     MetricValueStatus,
+    NotificationType,
     ValidationExceptionStatus,
     ValidationSeverity,
 )
@@ -415,4 +416,13 @@ def review(
         old_value={"status": current.value}, new_value={"status": new_status.value},
         reason=comment, request_id=request_id,
     )
+
+    from app.notifications.router import notify_review
+
+    if new_status == AssignmentStatus.APPROVED:
+        notify_review(db, assignment, NotificationType.APPROVED,
+                      f"{assignment.metric_code} was approved by {actor.email}")
+    elif new_status in (AssignmentStatus.NEEDS_CORRECTION, AssignmentStatus.REJECTED):
+        notify_review(db, assignment, NotificationType.RETURNED_FOR_CORRECTION,
+                      f"{assignment.metric_code} returned by {actor.email}: {comment or ''}")
     return assignment

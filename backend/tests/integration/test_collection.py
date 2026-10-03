@@ -314,3 +314,41 @@ def test_value_save_normalizes_units(client, ctx):
     assert saved.json()["raw_unit"] == "kWh"
     assert saved.json()["normalized_value"] == 170.0
     assert saved.json()["normalized_unit"] == "MWh"
+
+
+def test_review_actions_create_notifications(client, ctx):
+    """Approving an assignment notifies the owner (spec §22)."""
+    from sqlalchemy import text as sqltext
+
+    reviewer_h = _login(client, "reviewer@example.local")
+    owner_h = _login(client, "owner-gamma@example.local")
+    rows = _assignments(client, owner_h, status="SUBMITTED")
+    # approve the first submission that has no blocking exceptions (earlier
+    # module tests may already have consumed specific metrics)
+    target_id = None
+    for a in rows:
+        client.post(f"/api/v1/assignments/{a['id']}/review",
+                    json={"action": "START_REVIEW"}, headers=reviewer_h)
+        r = client.post(f"/api/v1/assignments/{a['id']}/review",
+                        json={"action": "APPROVE"}, headers=reviewer_h)
+        if r.status_code == 200:
+            target_id = a["id"]
+            break
+    assert target_id is not None, "an approvable submission must exist"
+    unread = client.get("/api/v1/notifications?unread_only=true", headers=owner_h).json()
+    assert any(n["type"] == "APPROVED" and n["payload"].get("assignment_id") == target_id
+               for n in unread)
+
+
+def test_reminder_scan_creates_notifications(client, ctx):
+    from app.notifications.router import scan_reminders
+    from sqlalchemy.orm import sessionmaker
+
+    TestSession = sessionmaker(bind=TEST_STATE["engine"], autoflush=False, expire_on_commit=False)
+    with TestSession() as db:
+        result = scan_reminders(db)
+    assert result["scanned"] > 0
+    # idempotent within the same day
+    with TestSession() as db:
+        again = scan_reminders(db)
+    assert again["created"] == 0
