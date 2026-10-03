@@ -16,12 +16,13 @@ const NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/", label: "Overview" },
     { href: "/review", label: "Review Queue" },
     { href: "/exceptions", label: "Exceptions" },
+    { href: "/consolidation", label: "Consolidation" },
     { href: "/entities", label: "Entities" },
     { href: "/framework", label: "Framework" },
   ],
   MANAGEMENT: [
     { href: "/", label: "Dashboard" },
-    { href: "/exceptions", label: "Exceptions" },
+    { href: "/consolidation", label: "KPIs" },
     { href: "/framework", label: "Framework" },
   ],
   REVIEWER: [

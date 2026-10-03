@@ -14,6 +14,8 @@ from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.calculation.router import router as calculation_router
 from app.collection.router import router as collection_router
+from app.consolidation.router import router as consolidation_router
+from app.workflow.periods_router import router as periods_router
 from app.entities.router import router as entities_router
 from app.framework.router import router as framework_router
 from app.logging import configure_logging, request_id_var
@@ -82,6 +84,8 @@ def create_app() -> FastAPI:
     app.include_router(collection_router)
     app.include_router(validation_router)
     app.include_router(calculation_router)
+    app.include_router(consolidation_router)
+    app.include_router(periods_router)
     app.include_router(reporting_periods_router)
 
     register_exception_handlers(app)

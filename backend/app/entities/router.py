@@ -138,7 +138,12 @@ def patch(
     old = {"name": entity.name, "parent_id": str(entity.parent_id) if entity.parent_id else None,
            "is_active": entity.is_active}
     try:
+        structure_changed = "parent_id" in changes and changes["parent_id"] != entity.parent_id
         update_entity(db, entity, changes)
+        if structure_changed:
+            from app.consolidation.service import mark_entity_traces_stale
+
+            mark_entity_traces_stale(db, entity.id)
         record(
             db, action=AuditAction.UPDATED, object_type="entity", object_id=entity.id,
             actor_id=user.id, actor_label=user.email, entity_id=entity.id,
