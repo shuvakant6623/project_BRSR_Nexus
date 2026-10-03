@@ -783,3 +783,114 @@ input[type="password"]:focus {
 }
 .styled-select-item .check { font-size: 0.75rem; }
 .styled-select-empty { color: var(--muted); font-size: 0.84rem; padding: 0.6rem 0.7rem; }
+
+/* ---------- dashboard v2 ---------- */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1rem;
+}
+.dash-card {
+  padding: 1.15rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.dash-card:hover { transform: translateY(-3px); border-color: var(--border-strong); }
+.dash-card h3 {
+  margin: 0 0 0.15rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+.dash-card .sub {
+  color: var(--muted);
+  font-size: 0.76rem;
+  margin: 0 0 0.8rem;
+}
+.col-3 { grid-column: span 3; }
+.col-4 { grid-column: span 4; }
+.col-6 { grid-column: span 6; }
+.col-8 { grid-column: span 8; }
+.col-12 { grid-column: span 12; }
+@media (max-width: 1100px) {
+  .col-3, .col-4, .col-6, .col-8 { grid-column: span 12; }
+}
+
+.readiness-ring { position: relative; display: flex; align-items: center; gap: 1.1rem; }
+.readiness-ring svg { transform: rotate(-90deg); }
+.ring-bg { stroke: rgba(148, 163, 184, 0.15); }
+.ring-fg { transition: stroke-dashoffset 1.2s cubic-bezier(.22,.9,.3,1); }
+.ring-stamp {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  display: inline-block;
+  margin-top: 0.35rem;
+}
+.ring-stamp.ready { color: var(--accent-2); border: 1px solid rgba(16,185,129,.5); background: rgba(16,185,129,.08); }
+.ring-stamp.progress { color: var(--amber); border: 1px solid rgba(251,191,36,.5); background: rgba(251,191,36,.07); }
+.ring-stamp.notready { color: var(--red); border: 1px solid rgba(248,113,113,.5); background: rgba(248,113,113,.07); }
+.readiness-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem 1rem; margin-top: 0.8rem; }
+.readiness-stats div { font-size: 0.78rem; color: var(--muted); display: flex; justify-content: space-between; gap: 0.8rem; }
+.readiness-stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+.delta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  margin-top: 0.4rem;
+}
+.delta-chip.good { color: var(--accent-2); background: rgba(16,185,129,.1); }
+.delta-chip.bad { color: var(--red); background: rgba(248,113,113,.1); }
+.delta-chip.flat { color: var(--muted); background: rgba(148,163,184,.1); }
+
+.pipeline-bar {
+  display: flex;
+  height: 34px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.pipeline-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #04121c;
+  transition: flex-grow 0.6s cubic-bezier(.22,.9,.3,1);
+  min-width: 2px;
+}
+.pipeline-legend { display: flex; flex-wrap: wrap; gap: 0.35rem 0.9rem; margin-top: 0.7rem; }
+.pipeline-legend span { font-size: 0.72rem; color: var(--muted); }
+.pipeline-legend b { color: var(--text); }
+
+.yoy-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; }
+.yoy-table td { padding: 0.42rem 0.3rem; border-bottom: 1px solid rgba(94,118,153,.12); }
+.yoy-table tr:last-child td { border-bottom: none; }
+.yoy-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.vs-card {
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: linear-gradient(135deg, rgba(251,191,36,.06), rgba(16,185,129,.05));
+}
+.vs-numbers { display: flex; align-items: center; gap: 1rem; margin: 0.7rem 0; flex-wrap: wrap; }
+.vs-big { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
+.vs-big.wrong { color: var(--red); text-decoration: line-through; text-decoration-thickness: 2px; }
+.vs-big.right { color: var(--accent-2); }
+.vs-note { font-size: 0.76rem; color: var(--muted); line-height: 1.6; }
+.vs-bar { height: 8px; border-radius: 999px; background: rgba(148,163,184,.15); overflow: hidden; margin-top: 0.2rem; }
+.vs-bar > div { height: 100%; border-radius: 999px; }
+
+.overdue-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
+  padding: 0.5rem 0.2rem; border-bottom: 1px solid rgba(94,118,153,.12);
+  font-size: 0.82rem;
+}
+.overdue-row:last-child { border-bottom: none; }

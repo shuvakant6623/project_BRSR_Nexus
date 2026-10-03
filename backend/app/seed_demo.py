@@ -98,10 +98,21 @@ OWNER_FOR_PLANT: dict[str, str] = {
 }
 
 
+# Revenue deliberately decoupled from activity scale for two plants so the
+# §5.6 consolidation demo shows Σnum/Σden ≠ naive average of intensities:
+# Delta is emissions-heavy (small revenue, big GHG), Zeta is efficient.
+REVENUE_FACTOR: dict[str, float] = {
+    "Plant Delta": 0.4,
+    "Plant Zeta": 2.2,
+}
+
+
 def _plant_value(code: str, plant: str, fy25: bool) -> float:
     base = DEMO_METRICS[code]
     value = base[2] if fy25 else base[1]
     factor = PLANT_FACTOR.get(plant, 1.0)
+    if code == "A-REVENUE":
+        factor = REVENUE_FACTOR.get(plant, factor)
     # Energy YoY anomaly is exact for Plant Alpha; others scale both years equally
     if code == "C-P6-GRID-NONRENEWABLE-MWH" and plant != "Plant Alpha":
         return round(value * factor)
