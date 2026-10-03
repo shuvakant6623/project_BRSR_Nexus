@@ -14,6 +14,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
+        <div className="aurora">
+          <div className="grid-overlay" />
+        </div>
         <AuthProvider>
           <AppShellNav />
           {children}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { HealthDot } from "@/components/HealthDot";
 import { useAuth } from "@/components/AuthProvider";
 
 const NAV: Record<string, { href: string; label: string }[]> = {
@@ -58,7 +59,8 @@ export function AppShellNav() {
 
   return (
     <header className="topbar">
-      <span className="brand">BRSR Reporting Portal</span>
+      <span className="brand"><span className="brand-mark">BR</span>BRSR Portal</span>
+      <HealthDot />
       <nav className="nav">
         {items.map((i) => (
           <Link key={i.href} href={i.href} className={pathname === i.href ? "active" : ""}>

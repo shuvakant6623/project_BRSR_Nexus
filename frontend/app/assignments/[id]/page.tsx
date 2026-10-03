@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/AuthProvider";
 import { DynamicMetricForm } from "@/components/DynamicMetricForm";
+import { GovernanceStepper } from "@/components/GovernanceStepper";
 import {
   AssignmentDetail,
   getAssignment,
@@ -115,7 +116,7 @@ export default function AssignmentDetailPage() {
   return (
     <main className="page">
       <a className="linkbtn" href="/assignments">← Back to assignments</a>
-      <div className="detail-header">
+      <div className="detail-header rise">
         <h1>{metric.label}</h1>
         <span
           className="status-badge"
@@ -124,9 +125,10 @@ export default function AssignmentDetailPage() {
           {assignment.status.replace("_", " ")}
         </span>
       </div>
-      <p className="hint">
+      <p className="hint rise rise-d1">
         {detail.entity_name} · {detail.period_label} · <span className="mono">{metric.metric_code}</span>
       </p>
+      <GovernanceStepper status={assignment.status} />
 
       <DynamicMetricForm
         metric={metric}
