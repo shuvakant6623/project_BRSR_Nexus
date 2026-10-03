@@ -303,29 +303,35 @@ def _seed_framework(db: Session) -> tuple[FrameworkVersion, FrameworkVersion]:
             ))
     db.flush()
 
-    # ---- validation rules (current framework version) ----
+    # ---- validation rules (deterministic rules for the current version;
+    #      statistical peer rules apply to every version — they are
+    #      version-agnostic) ----
     from app.models.enums import ValidationRuleClass, ValidationSeverity
 
     for r in seeddata.VALIDATION_RULES:
-        exists = db.scalar(
-            select(ValidationRule).where(
-                ValidationRule.framework_version_id == current.id,
-                ValidationRule.rule_code == r["code"],
-                ValidationRule.version == 1,
-            )
+        target_versions = (
+            (current, previous) if r["class"] == "ANOMALY_DETECTION" else (current,)
         )
-        if exists is None:
-            db.add(ValidationRule(
-                framework_version_id=current.id,
-                rule_code=r["code"],
-                rule_class=ValidationRuleClass(r["class"]),
-                target_metric_code=r["target"],
-                severity=ValidationSeverity(r["severity"]),
-                config=r["config"],
-                applies_on=r["applies_on"],
-                version=1,
-                message_template=r["message"],
-            ))
+        for fv in target_versions:
+            exists = db.scalar(
+                select(ValidationRule).where(
+                    ValidationRule.framework_version_id == fv.id,
+                    ValidationRule.rule_code == r["code"],
+                    ValidationRule.version == 1,
+                )
+            )
+            if exists is None:
+                db.add(ValidationRule(
+                    framework_version_id=fv.id,
+                    rule_code=r["code"],
+                    rule_class=ValidationRuleClass(r["class"]),
+                    target_metric_code=r["target"],
+                    severity=ValidationSeverity(r["severity"]),
+                    config=r["config"],
+                    applies_on=r["applies_on"],
+                    version=1,
+                    message_template=r["message"],
+                ))
     db.flush()
     return current, previous
 

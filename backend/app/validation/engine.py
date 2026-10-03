@@ -309,7 +309,10 @@ def evaluate_assignment(
         value = _latest_value(db, assignment.id)
     findings: list[Finding] = []
     for rule in _rules_for(db, assignment.framework_version_id, stage):
-        evaluator = RULE_EVALUATORS[rule.rule_class.value]
+        evaluator = RULE_EVALUATORS.get(rule.rule_class.value)
+        if evaluator is None:
+            # statistical rules run in the cross-site sweep, not per assignment
+            continue
         try:
             findings.extend(evaluator(db, assignment, metric, value, rule))
         except Exception:

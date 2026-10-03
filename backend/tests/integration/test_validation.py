@@ -291,3 +291,29 @@ def test_audit_events_recorded_for_exceptions(client, ctx):
             text("SELECT count(*) FROM audit_event WHERE action='EXCEPTION_RAISED'")
         ).scalar()
     assert count > 0
+
+
+def test_statistical_sweep_flags_cross_site_outliers(client, ctx):
+    """The PDF's recommended second layer: IQR + z-score across peer plants.
+    Delta is deliberately emissions-heavy -> must be flagged statistically."""
+    import pytest as _pytest
+
+    # seed divergence: Delta revenue is decoupled, so its GHG intensity is a
+    # peer outlier; sweep runs on approved FY24 values
+    from sqlalchemy import select
+    from sqlalchemy.orm import sessionmaker
+
+    TestSession = sessionmaker(bind=TEST_STATE["engine"], autoflush=False, expire_on_commit=False)
+    with TestSession() as db:
+        from app.models import ReportingPeriod
+
+        fy24 = db.scalar(select(ReportingPeriod).where(ReportingPeriod.label == "FY2024-25"))
+        from app.validation import statistics
+
+        result = statistics.run_statistical_sweep(db, fy24.id, actor_label="test")
+        db.commit()
+    assert result["checked"] > 0, "peer metrics with >= 4 approved plants must be checked"
+    rows = _exceptions(client, _login(client, "reviewer@example.local"))
+    iqr_rows = [e for e in rows if e["rule_code"] == "VR-IQR-PEER"]
+    z_rows = [e for e in rows if e["rule_code"] == "VR-ZSCORE-PEER"]
+    assert iqr_rows or z_rows, "deliberate cross-site outliers must raise statistical exceptions"

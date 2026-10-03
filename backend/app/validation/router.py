@@ -120,8 +120,15 @@ def run_validation(
         )
         for key in totals:
             totals[key] += result[key]
+    statistical = {"checked": 0, "raised": 0}
+    if user.role != UserRole.DATA_OWNER:
+        from app.validation import statistics
+
+        statistical = statistics.run_statistical_sweep(
+            db, body.period_id, actor_id=user.id, actor_label=user.email
+        )
     db.commit()
-    return {"status": "completed", **totals}
+    return {"status": "completed", **totals, "statistical": statistical}
 
 
 @router.get("/exceptions", response_model=list[ExceptionOut])

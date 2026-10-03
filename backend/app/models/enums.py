@@ -73,6 +73,7 @@ class ValidationRuleClass(str, enum.Enum):
     YOY_VARIANCE = "YOY_VARIANCE"
     EVIDENCE_COMPLETENESS = "EVIDENCE_COMPLETENESS"
     LOGICAL_CONSISTENCY = "LOGICAL_CONSISTENCY"
+    ANOMALY_DETECTION = "ANOMALY_DETECTION"
 
 
 class ValidationExceptionStatus(str, enum.Enum):
