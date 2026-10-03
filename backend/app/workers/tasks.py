@@ -55,7 +55,7 @@ def generate_report(self, report_id: str) -> dict:
 @celery_app.task
 def scan_reminders() -> dict:
     """Celery Beat scan (spec §22): due-soon / overdue notifications."""
-    from app.notifications.service import scan_reminders as _scan
+    from app.notifications.router import scan_reminders as _scan
 
     from app.db.session import SessionLocal
 
