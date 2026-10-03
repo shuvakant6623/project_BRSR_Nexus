@@ -1,4 +1,10 @@
-.PHONY: up down logs migrate seed test test-unit test-integration test-e2e lint format reset-db
+.PHONY: demo up down logs migrate seed test test-unit test-integration test-e2e lint format reset-db
+
+demo:
+	./run.sh
+
+demo-keep:
+	./run.sh --keep
 
 up:
 	docker compose up --build -d
