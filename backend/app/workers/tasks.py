@@ -64,3 +64,30 @@ def scan_reminders() -> dict:
         return _scan(db)
     finally:
         db.close()
+
+
+@celery_app.task(bind=True, max_retries=1, default_retry_delay=10)
+def process_bulk_import(self, job_id: str, actor_id: str) -> dict:
+    """Process an uploaded bulk-import CSV (spec §21)."""
+    import uuid as _uuid
+
+    from app.db.session import SessionLocal
+    from app.imports.service import process_import
+
+    db = SessionLocal()
+    try:
+        result = process_import(db, _uuid.UUID(job_id), _uuid.UUID(actor_id))
+        return result
+    except Exception as exc:
+        from app.models import BulkImportJob
+
+        job = db.get(BulkImportJob, _uuid.UUID(job_id))
+        if job is not None:
+            job.status = "FAILED"
+            job.error = str(exc)[:2000]
+            job.completed_at = __import__("datetime").datetime.now(__import__("datetime").UTC)
+            db.commit()
+        logger.exception("bulk import %s failed", job_id)
+        return {"job_id": job_id, "status": "FAILED", "error": str(exc)}
+    finally:
+        db.close()

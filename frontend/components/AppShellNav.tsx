@@ -47,6 +47,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
   DATA_OWNER: [
     { href: "/", label: "My Dashboard" },
     { href: "/assignments", label: "My Assignments" },
+    { href: "/import", label: "Bulk Import" },
     { href: "/exceptions", label: "My Exceptions" },
     { href: "/framework", label: "Framework" },
   ],
