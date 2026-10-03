@@ -74,7 +74,8 @@ def test_workforce_mismatch_raises_blocking_cross_section(client, ctx):
         headers=_login(client, "manager@example.local"),
     )
     assert r.status_code == 200
-    assert r.json()["raised"] > 0
+    # earlier test modules may already have run validation on Beta; the run
+    # raises only NEW findings, so assert on the exception's existence below
     rows = _exceptions(
         client, _login(client, "reviewer@example.local"),
         entity_id=str(ctx["plant_beta"]), severity="BLOCKING",

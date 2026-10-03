@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { useAuth } from "@/components/AuthProvider";
 import { DynamicMetricForm } from "@/components/DynamicMetricForm";
 import {
   AssignmentDetail,
@@ -11,13 +12,73 @@ import {
   STATUS_COLORS,
   ValueRow,
 } from "@/features/collection/collection";
+import {
+  deleteEvidence,
+  downloadEvidence,
+  EvidenceRow,
+  listEvidence,
+  uploadEvidence,
+} from "@/features/evidence/evidence";
 
 const EDITABLE = new Set(["NOT_STARTED", "IN_PROGRESS", "NEEDS_CORRECTION", "REJECTED"]);
 
 export default function AssignmentDetailPage() {
   const params = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [detail, setDetail] = useState<AssignmentDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [evidence, setEvidence] = useState<EvidenceRow[]>([]);
+  const [evidenceError, setEvidenceError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const reloadEvidence = useCallback(() => {
+    const valueId = detail?.values[0]?.id;
+    if (!valueId) {
+      setEvidence([]);
+      return Promise.resolve();
+    }
+    return listEvidence(valueId)
+      .then(setEvidence)
+      .catch((e) => setEvidenceError(e instanceof Error ? e.message : "Failed to load evidence"));
+  }, [detail]);
+
+  useEffect(() => {
+    if (detail) reloadEvidence();
+  }, [detail, reloadEvidence]);
+
+  async function onUploadFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !detail?.values[0]) return;
+    setUploading(true);
+    setEvidenceError(null);
+    try {
+      await uploadEvidence(detail.values[0].id, file);
+      await reloadEvidence();
+    } catch (err) {
+      setEvidenceError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  }
+
+  async function onDownload(id: string) {
+    try {
+      const { url } = await downloadEvidence(id);
+      window.open(url, "_blank");
+    } catch (err) {
+      setEvidenceError(err instanceof Error ? err.message : "Download failed");
+    }
+  }
+
+  async function onDeleteEvidence(id: string) {
+    try {
+      await deleteEvidence(id);
+      await reloadEvidence();
+    } catch (err) {
+      setEvidenceError(err instanceof Error ? err.message : "Delete failed");
+    }
+  }
 
   const reload = useCallback(() => {
     return getAssignment(params.id)
@@ -85,6 +146,46 @@ export default function AssignmentDetailPage() {
           edited. Values in review or approved states are read-only for data owners.
         </div>
       )}
+
+      <section className="history">
+        <h2>Evidence</h2>
+        {evidenceError && <div className="auth-error">{evidenceError}</div>}
+        {detail.values.length > 0 && user?.role === "DATA_OWNER" && editable && (
+          <label className="uploadbtn">
+            {uploading ? "Uploading…" : "Upload evidence (PDF / CSV / XLSX / PNG / JPG)"}
+            <input type="file" accept=".pdf,.csv,.xlsx,.png,.jpg,.jpeg" onChange={onUploadFile} />
+          </label>
+        )}
+        {detail.values.length === 0 ? (
+          <p className="state">Save a value first, then attach evidence.</p>
+        ) : evidence.length === 0 ? (
+          <p className="state">
+            No evidence attached{metric.evidence_required ? " — this BRSR Core metric REQUIRES evidence" : ""}.
+          </p>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr><th>File</th><th>Type</th><th>Size</th><th>SHA-256</th><th></th></tr>
+            </thead>
+            <tbody>
+              {evidence.map((ev) => (
+                <tr key={ev.id}>
+                  <td>{ev.original_filename}</td>
+                  <td>{ev.mime_type}</td>
+                  <td>{(ev.size_bytes / 1024).toFixed(1)} KB</td>
+                  <td className="mono">{ev.sha256_hash.slice(0, 16)}…</td>
+                  <td>
+                    <button className="ghostbtn" onClick={() => onDownload(ev.id)}>Download</button>{" "}
+                    {user?.role === "DATA_OWNER" && (
+                      <button className="ghostbtn danger" onClick={() => onDeleteEvidence(ev.id)}>Delete</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
 
       <section className="history">
         <h2>Value history</h2>
