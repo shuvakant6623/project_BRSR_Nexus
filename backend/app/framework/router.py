@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.audit.service import record
-from app.auth.deps import require_roles
+from app.auth.deps import get_current_user, require_roles
 from app.config import get_settings
 from app.db.session import get_db
 from app.framework.service import FrameworkMetadataError, create_metric
@@ -105,7 +105,9 @@ class RuleOut(BaseModel):
 
 
 @router.get("/versions", response_model=list[FrameworkVersionOut])
-def list_versions(db: Session = Depends(get_db)) -> list[FrameworkVersionOut]:
+def list_versions(
+    _user: AppUser = Depends(get_current_user), db: Session = Depends(get_db)
+) -> list[FrameworkVersionOut]:
     versions = list(db.scalars(select(FrameworkVersion).order_by(FrameworkVersion.effective_from)).all())
     out = []
     for v in versions:
@@ -133,6 +135,7 @@ def list_metrics(
     section: str | None = Query(default=None),
     principle: str | None = Query(default=None),
     brsr_core: bool | None = Query(default=None),
+    _user: AppUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[MetricOut]:
     version = db.get(FrameworkVersion, version_id)
@@ -208,7 +211,11 @@ def add_metric(
 
 
 @router.get("/versions/{version_id}/formulas", response_model=list[FormulaOut])
-def list_formulas(version_id: uuid.UUID, db: Session = Depends(get_db)) -> list[FormulaOut]:
+def list_formulas(
+    version_id: uuid.UUID,
+    _user: AppUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[FormulaOut]:
     definitions = list(
         db.scalars(
             select(FormulaDefinition).where(
@@ -237,7 +244,11 @@ def list_formulas(version_id: uuid.UUID, db: Session = Depends(get_db)) -> list[
 
 
 @router.get("/versions/{version_id}/rules", response_model=list[RuleOut])
-def list_rules(version_id: uuid.UUID, db: Session = Depends(get_db)) -> list[RuleOut]:
+def list_rules(
+    version_id: uuid.UUID,
+    _user: AppUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[RuleOut]:
     rules = list(
         db.scalars(
             select(ValidationRule).where(ValidationRule.framework_version_id == version_id)
