@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     ai_provider: str = "none"
     ai_api_key: str = ""
     ocr_provider: str = "none"
+    ai_model: str = "gpt-4o-mini"
 
     # Frontend
     frontend_api_url: str = "http://localhost:8000"

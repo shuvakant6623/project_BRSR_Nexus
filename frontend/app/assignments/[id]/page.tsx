@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/AuthProvider";
+import { api } from "@/lib/api";
 import { DynamicMetricForm } from "@/components/DynamicMetricForm";
 import { GovernanceStepper } from "@/components/GovernanceStepper";
 import {
@@ -21,6 +22,16 @@ import {
   uploadEvidence,
 } from "@/features/evidence/evidence";
 
+interface AISuggestion {
+  id: string;
+  evidence_id: string;
+  candidate_value: number | null;
+  candidate_unit: string | null;
+  confidence: number | null;
+  provider: string;
+  status: string;
+}
+
 const EDITABLE = new Set(["NOT_STARTED", "IN_PROGRESS", "NEEDS_CORRECTION", "REJECTED"]);
 
 export default function AssignmentDetailPage() {
@@ -31,6 +42,8 @@ export default function AssignmentDetailPage() {
   const [evidence, setEvidence] = useState<EvidenceRow[]>([]);
   const [evidenceError, setEvidenceError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
+  const [aiBusy, setAiBusy] = useState(false);
 
   const reloadEvidence = useCallback(() => {
     const valueId = detail?.values[0]?.id;
@@ -42,6 +55,57 @@ export default function AssignmentDetailPage() {
       .then(setEvidence)
       .catch((e) => setEvidenceError(e instanceof Error ? e.message : "Failed to load evidence"));
   }, [detail]);
+
+  const reloadSuggestions = useCallback(() => {
+    api<AISuggestion[]>("/api/v1/ai-suggestions?pending_only=true")
+      .then(setSuggestions)
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (detail) reloadSuggestions();
+  }, [detail, reloadSuggestions]);
+
+  async function onExtract(evidenceId: string) {
+    setAiBusy(true);
+    setEvidenceError(null);
+    try {
+      await api(`/api/v1/ai-suggestions/extract/${evidenceId}`, { method: "POST" });
+      reloadSuggestions();
+    } catch (err) {
+      setEvidenceError(err instanceof Error ? err.message : "Extraction failed");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  async function onAcceptSuggestion(id: string, value: number | null, unit: string | null) {
+    setAiBusy(true);
+    try {
+      await api(`/api/v1/ai-suggestions/${id}/accept`, {
+        method: "POST",
+        body: JSON.stringify({ value, unit }),
+      });
+      reloadSuggestions();
+      await reload();
+    } catch (err) {
+      setEvidenceError(err instanceof Error ? err.message : "Accept failed");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  async function onRejectSuggestion(id: string) {
+    setAiBusy(true);
+    try {
+      await api(`/api/v1/ai-suggestions/${id}/reject`, { method: "POST" });
+      reloadSuggestions();
+    } catch (err) {
+      setEvidenceError(err instanceof Error ? err.message : "Reject failed");
+    } finally {
+      setAiBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (detail) reloadEvidence();
@@ -179,7 +243,12 @@ export default function AssignmentDetailPage() {
                   <td>
                     <button className="ghostbtn" onClick={() => onDownload(ev.id)}>Download</button>{" "}
                     {user?.role === "DATA_OWNER" && (
-                      <button className="ghostbtn danger" onClick={() => onDeleteEvidence(ev.id)}>Delete</button>
+                      <>
+                        <button className="ghostbtn" disabled={aiBusy} onClick={() => onExtract(ev.id)}>
+                          🤖 Extract
+                        </button>{" "}
+                        <button className="ghostbtn danger" onClick={() => onDeleteEvidence(ev.id)}>Delete</button>
+                      </>
                     )}
                   </td>
                 </tr>
@@ -188,6 +257,45 @@ export default function AssignmentDetailPage() {
           </table>
         )}
       </section>
+
+      {suggestions.filter(s => detail.values.some(v => {
+        const ev = evidence.find(e => e.id === s.evidence_id);
+        return ev && ev.metric_value_id === detail.values[0]?.id;
+      })).length > 0 && (
+        <section className="history">
+          <h2>AI suggestions — UNVERIFIED</h2>
+          <p className="hint" style={{ fontSize: ".8rem" }}>
+            Accepting creates an <strong>owner-authored draft</strong> (IN_PROGRESS) that you still
+            review and submit — a suggestion can never directly enter the approved record.
+          </p>
+          {suggestions
+            .filter((s) => s.status === "PENDING" && evidence.some(
+              (e) => e.id === s.evidence_id && e.metric_value_id === detail.values[0]?.id))
+            .map((s) => (
+              <div key={s.id} className="glass-card" style={{ padding: "1rem 1.2rem", margin: ".6rem 0" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: ".8rem", flexWrap: "wrap" }}>
+                  <span className="badge warn">AI SUGGESTION — UNVERIFIED</span>
+                  <span style={{ fontSize: "1.15rem", fontWeight: 800 }}>
+                    {s.candidate_value?.toLocaleString()} {s.candidate_unit}
+                  </span>
+                  <span className="badge required">
+                    confidence {s.confidence ? Math.round(s.confidence * 100) : "?"}%
+                  </span>
+                  {s.provider === "local_demo" && <span className="badge evidence">demo extraction</span>}
+                  <span style={{ marginLeft: "auto" }}>
+                    <button className="primarybtn" disabled={aiBusy}
+                      onClick={() => onAcceptSuggestion(s.id, s.candidate_value, s.candidate_unit)}>
+                      Accept
+                    </button>{" "}
+                    <button className="ghostbtn" disabled={aiBusy} onClick={() => onRejectSuggestion(s.id)}>
+                      Reject
+                    </button>
+                  </span>
+                </div>
+              </div>
+            ))}
+        </section>
+      )}
 
       <section className="history">
         <h2>Value history</h2>
