@@ -3,11 +3,23 @@
 A metadata-driven BRSR (Business Responsibility and Sustainability Reporting) data-management and
 reporting platform, built as a modular monolith with an async worker layer.
 
-**Status: Phases 1–7 complete.** Docker stack, full database schema, auth/RBAC, entity
-hierarchy, metadata-driven BRSR framework (57 metrics, 2 versions), data collection with
-immutable value versioning, and unit normalization are implemented and tested (67 tests).
-Remaining phases: validation engine, calculation, consolidation, evidence, lineage, assurance,
-reporting, dashboard, trends, bulk import, notifications, AI/OCR (see `docs/`).
+**Status: feature-complete MVP.** All pipeline stages are implemented and integration-tested
+(138 tests): auth/RBAC, entity hierarchy, metadata-driven BRSR framework (57 metrics, 2
+versions, 16 BRSR Core indicators), collection with immutable value versioning, unit
+normalization, 10-rule validation engine + statistical anomaly detection (IQR/z-score), safe
+calculation engine, hierarchy consolidation with correct ratio recomputation, evidence with
+SHA-256 + presigned downloads, click-through lineage, assurance readiness, period locking →
+immutable snapshots → async PDF reports (Celery), live dashboard, lineage-aware trends, bulk
+CSV import, notifications, and human-in-the-loop AI extraction. Docs: `docs/ARCHITECTURE.md`,
+`docs/API.md`, `docs/DATABASE.md`, `docs/DEMO.md`, `docs/SECURITY.md`.
+
+## One-command start
+
+```bash
+./run.sh          # fresh demo state: wipe → migrate → seed → consolidate → up → verify
+./run.sh --keep   # keep data
+./run.sh --test   # also run the backend test suite
+```
 
 ## Quick start
 
