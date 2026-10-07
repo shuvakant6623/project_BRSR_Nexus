@@ -1,4 +1,4 @@
-"""Evidence service: bytes in MinIO, metadata in PostgreSQL, SHA-256 integrity,
+"""Evidence service: bytes in S3-compatible storage (RustFS), metadata in PostgreSQL, SHA-256 integrity,
 signed time-limited downloads, soft delete. Private bucket — no public access.
 """
 import uuid
@@ -63,7 +63,7 @@ def upload_evidence(
     actor: AppUser,
     request_id: str | None = None,
 ) -> tuple[Evidence, Evidence | None]:
-    """Store the file in MinIO and its metadata in PostgreSQL (same commit as
+    """Store the file in object storage and its metadata in PostgreSQL (same commit as
     the caller's transaction). Returns (evidence, duplicate_of) where
     duplicate_of is an existing evidence row with the identical SHA-256."""
     _validate_file(filename, mime_type, len(content))

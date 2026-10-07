@@ -1,7 +1,7 @@
 """Health and readiness endpoints.
 
 /healthz  — API process alive (no dependency checks).
-/readyz   — PostgreSQL, Redis and MinIO reachable; 503 otherwise.
+/readyz   — PostgreSQL, Redis and object storage reachable; 503 otherwise.
 """
 from fastapi import APIRouter, Response
 from pydantic import BaseModel

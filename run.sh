@@ -31,7 +31,7 @@ if [ ! -f .env ]; then
   cp .env.example .env
   # local port overrides only needed if host ports 9000/9001 are busy
   if ss -tln 2>/dev/null | grep -qE ":(9000|9001) "; then
-    info "host ports 9000/9001 busy — using 19000/19001 for MinIO"
+    info "host ports 9000/9001 busy — using 19000/19001 for object storage"
     printf '\nMINIO_HOST_PORT=19000\nMINIO_CONSOLE_HOST_PORT=19001\n' >> .env
   fi
 fi
@@ -47,8 +47,8 @@ else
 fi
 
 # ------------------------------------------------------- datastores + health
-step "Starting PostgreSQL, Redis, MinIO"
-docker compose up -d postgres redis minio > /dev/null
+step "Starting PostgreSQL, Redis, RustFS (object storage)"
+docker compose up -d postgres redis s3 > /dev/null
 
 wait_for() { # service, url
   for i in $(seq 1 40); do
@@ -59,8 +59,8 @@ wait_for() { # service, url
 }
 until docker compose exec -T postgres pg_isready -U brsr > /dev/null 2>&1; do sleep 1; done
 until docker compose exec -T redis redis-cli ping > /dev/null 2>&1; do sleep 1; done
-until curl -sf "http://localhost:${MINIO_PORT}/minio/health/live" > /dev/null 2>&1; do sleep 1; done
-ok "PostgreSQL, Redis and MinIO are healthy"
+until curl -sf "http://localhost:${MINIO_PORT}/minio/health/live" > /dev/null 2>&1 || curl -sfo /dev/null "http://localhost:${MINIO_PORT}" 2>/dev/null; do sleep 1; done
+ok "PostgreSQL, Redis and RustFS are healthy"
 
 # ----------------------------------------------------------------- migrations
 step "Running database migrations"
@@ -114,7 +114,7 @@ if [ "$RUN_TESTS" = "yes" ]; then
 fi
 
 # ------------------------------------------------------------------- summary
-MINIO_DISPLAY_PORT=$(docker compose port minio 9000 2>/dev/null | cut -d: -f2 || echo "$MINIO_PORT")
+MINIO_DISPLAY_PORT=$(docker compose port s3 9000 2>/dev/null | cut -d: -f2 || echo "$MINIO_PORT")
 FRONTEND_PORT=$(docker compose port frontend 3000 2>/dev/null | cut -d: -f2 || echo "3000")
 BACKEND_PORT=$(docker compose port backend 8000 2>/dev/null | cut -d: -f2 || echo "8000")
 
@@ -124,7 +124,7 @@ echo -e "${GREEN}  BRSR Reporting Portal is running — demo ready${NC}"
 echo -e "${GREEN}=============================================================${NC}"
 echo -e "  Frontend      ${CYAN}http://localhost:${FRONTEND_PORT}${NC}"
 echo -e "  API           ${CYAN}http://localhost:${BACKEND_PORT}${NC}   (docs: /docs)"
-echo -e "  MinIO console ${CYAN}http://localhost:${MINIO_DISPLAY_PORT:-9001}${NC}"
+echo -e "  Storage console ${CYAN}http://localhost:${MINIO_DISPLAY_PORT:-9001}${NC}"
 echo
 echo -e "  Demo accounts (password: ${YELLOW}Demo@12345${NC})"
 echo -e "    admin@example.local        ADMIN"

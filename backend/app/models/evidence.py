@@ -1,4 +1,4 @@
-"""Evidence file metadata (bytes live in MinIO)."""
+"""Evidence file metadata (bytes live in S3-compatible object storage)."""
 import uuid
 from datetime import datetime
 

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=10)
 def generate_report(self, report_id: str) -> dict:
-    """Render the immutable snapshot into HTML + PDF and store in MinIO."""
+    """Render the immutable snapshot into HTML + PDF and store in object storage."""
     from datetime import UTC, datetime
 
     from app.db.session import SessionLocal

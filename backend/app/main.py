@@ -37,6 +37,15 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     configure_logging()
     logger.info("starting", extra={"endpoint": "lifespan", "status": 0, "duration_ms": 0})
+    # ensure the private evidence bucket exists (replaces the old mc-init
+    # container; S3 buckets are private by default — no anonymous access)
+    try:
+        from app.infra import storage
+
+        storage.ensure_bucket()
+        logger.info("s3 bucket ensured", extra={"endpoint": "lifespan", "status": 0, "duration_ms": 0})
+    except Exception:
+        logger.exception("s3 bucket init failed — /readyz will report degraded", extra={"endpoint": "lifespan", "status": 0, "duration_ms": 0})
     yield
 
 

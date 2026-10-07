@@ -1,6 +1,6 @@
 # Architecture
 
-Metadata-driven modular monolith + async worker layer (FastAPI + PostgreSQL + Redis/MinIO +
+Metadata-driven modular monolith + async worker layer (FastAPI + PostgreSQL + Redis/RustFS +
 Celery + Next.js 15).
 
 ```
@@ -11,7 +11,7 @@ Celery + Next.js 15).
         ┌──────────┬─────────┼──────────┬─────────────┐
         ▼          ▼         ▼          ▼             ▼
       AUTH      FRAMEWORK  COLLECTION  EVIDENCE    REPORTING
-      (JWT,      (versions, (assign-    (MinIO,     (lock → snapshot
+      (JWT,      (versions, (assign-    (RustFS,    (lock → snapshot
       RBAC,      metrics,   ments,      SHA-256,    → async PDF)
       scopes)    rules,     MetricValue signed
                  formulas)  versioning) URLs)

@@ -14,7 +14,7 @@
 - **Injection**: SQLAlchemy parameterized queries only; the formula evaluator
   is a hand-written recursive-descent parser over an allow-listed grammar —
   no eval/exec, injection attempts are unit-tested.
-- **Files**: private MinIO bucket (anonymous access disabled at init);
+- **Files**: private S3-compatible bucket (RustFS) (anonymous access disabled at init);
   presigned, time-limited download URLs with browser-reachable host
   rewriting; MIME + extension + size validation; SHA-256 integrity on every
   evidence object.

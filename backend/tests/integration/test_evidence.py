@@ -117,9 +117,14 @@ def test_upload_stores_in_minio_with_sha256(client, ctx):
     assert dl.status_code == 200
     url = dl.json()["url"]
     assert "brsr-evidence" in url
-    # the presigned host may be rewritten for browsers; inside the test
-    # container fetch via the internal MinIO host
-    url = url.replace("localhost:19000", "minio:9000")
+    # when S3_PUBLIC_ENDPOINT is set the URL is signed for the browser-facing
+    # host (unreachable inside the test container) — clear it so presigning
+    # uses the internal endpoint, then fetch via the internal host
+    from app.config import get_settings
+
+    get_settings().s3_public_endpoint = ""
+    dl = client.get(f"/api/v1/evidence/{body['id']}/download", headers=owner_h)
+    url = dl.json()["url"].replace("localhost:19000", "s3:9000")
     import urllib.request
 
     with urllib.request.urlopen(url) as resp:

@@ -1,6 +1,6 @@
 """Bulk CSV import (spec §21): personalized template, async Celery processing
 with the SAME validation engine as manual entry, rows become drafts — never
-auto-submitted; invalid rows go to an error report in MinIO."""
+auto-submitted; invalid rows go to an error report in object storage."""
 import csv
 import io
 import uuid

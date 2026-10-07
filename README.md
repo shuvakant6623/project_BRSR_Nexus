@@ -35,7 +35,7 @@ Services:
 | Frontend   | http://localhost:3000  |
 | Backend API| http://localhost:8000  |
 | API docs   | http://localhost:8000/docs |
-| MinIO console | http://localhost:9001 |
+| Object storage console (RustFS) | http://localhost:9001 |
 
 ## Verification (Phase 1)
 
@@ -44,7 +44,7 @@ curl http://localhost:8000/healthz   # -> {"status":"ok"}
 curl http://localhost:8000/readyz    # -> {"status":"ready","dependencies":{...}}
 ```
 
-`/readyz` performs live checks against PostgreSQL, Redis and MinIO and returns 503 when any
+`/readyz` performs live checks against PostgreSQL, Redis and object storage (RustFS) and returns 503 when any
 dependency is down.
 
 ## Demo credentials

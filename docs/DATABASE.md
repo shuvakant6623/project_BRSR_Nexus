@@ -13,7 +13,7 @@ framework_version ──< metric_definition (>── formula_definition ──< 
                                                 │
                 validation_rule ──< validation_exception
                                                 │
-                                        evidence (MinIO bytes, SHA-256)
+                                        evidence (S3-compatible bytes via RustFS, SHA-256)
 
 consolidation_trace (entity, metric, period) — read model with contributing
 value ids + staleness · report_snapshot (immutable JSONB + checksum) ──<
