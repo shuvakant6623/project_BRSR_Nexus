@@ -119,7 +119,7 @@ def create(
         db.commit()
     except EntityValidationError as exc:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     db.refresh(entity)
     return _to_out(entity)
 
@@ -155,6 +155,6 @@ def patch(
         db.commit()
     except EntityValidationError as exc:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     db.refresh(entity)
     return _to_out(entity)

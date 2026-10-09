@@ -15,8 +15,8 @@ from app.models import (
     AppUser,
     FrameworkVersion,
     GeneratedReport,
-    ReportSnapshot,
     ReportingPeriod,
+    ReportSnapshot,
 )
 from app.models.enums import AuditAction, JobStatus, UserRole
 from app.reporting import service
@@ -76,7 +76,7 @@ def lock_period(
         db.commit()
     except service.ReportingError as exc:
         db.rollback()
-        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
     db.refresh(period)
     fv = db.get(FrameworkVersion, period.framework_version_id)
     return PeriodOut(
@@ -103,7 +103,7 @@ def generate_report(
         snapshot = service.create_snapshot(db, period_id, user, request_id=request_id_var.get())
     except service.ReportingError as exc:
         db.rollback()
-        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
     report = GeneratedReport(
         period_id=period_id, snapshot_id=snapshot.id, status=JobStatus.PENDING,
         created_by=user.id, request_id=request_id_var.get(),
@@ -185,8 +185,6 @@ def report_preview(
     if snapshot is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="No snapshot exists for this period; generate the report first")
-    from fastapi.responses import HTMLResponse
-
     html = service.render_snapshot_html(db, snapshot.id)
     return HTMLResponse(content=html)
 

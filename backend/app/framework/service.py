@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 
 from app.models import (
     FormulaDefinition,
-    FrameworkVersion,
     MetricDefinition,
 )
 from app.models.enums import AggregationSemantics, MetricDataType

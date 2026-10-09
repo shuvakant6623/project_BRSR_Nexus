@@ -95,7 +95,7 @@ def refresh(body: RefreshRequest, db: Session = Depends(get_db)) -> TokenPair:
     try:
         payload = decode_token(body.refresh_token, expected_type="refresh")
     except (jwt.InvalidTokenError, ValueError, jwt.ExpiredSignatureError):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token") from None
     jti = payload["jti"]
     if r.exists(f"{REFRESH_DENYLIST_PREFIX}{jti}"):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token revoked")

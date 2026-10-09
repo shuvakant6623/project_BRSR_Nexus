@@ -157,7 +157,7 @@ def _seed_framework(db: Session) -> tuple[FrameworkVersion, FrameworkVersion]:
     db.flush()
 
     def _metric_payload(m: dict) -> dict:
-        payload = {
+        return {
             "metric_code": m["code"],
             "section": m["section"],
             "principle": m.get("principle"),
@@ -177,7 +177,6 @@ def _seed_framework(db: Session) -> tuple[FrameworkVersion, FrameworkVersion]:
             "brsr_core": m.get("brsr_core", False),
             "display_order": m.get("order"),
         }
-        return payload
 
     def _formula_id(code: str) -> int | None:
         if code is None:

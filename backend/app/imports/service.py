@@ -21,7 +21,6 @@ from app.models import (
     ReportingPeriod,
 )
 from app.models.enums import AssignmentStatus, AuditAction, MetricValueStatus
-from app.validation import engine as validation_engine
 
 
 class ImportError_(Exception):
@@ -49,7 +48,7 @@ def build_template(db: Session, user: AppUser) -> tuple[str, str]:
     }
     for a in assignments[:200]:
         metric = metrics.get(a.metric_code)
-        unit = (metric.allowed_units or [metric.canonical_unit] or [""])[0] if metric else ""
+        unit = (metric.allowed_units or [metric.canonical_unit])[0] if metric else ""
         rows.append([a.metric_code, entities[a.entity_id].name if a.entity_id in entities else "", "", unit])
     buf = io.StringIO()
     writer = csv.writer(buf)
@@ -95,8 +94,9 @@ def process_import(
         raw = (row.get("value") or "").strip()
         unit = (row.get("unit") or "").strip() or None
 
-        def err(msg):
-            errors.append({"line": line_no, "metric_code": code, "entity": entity_name, "error": msg})
+        def err(msg, *, line=line_no, code_=code, entity=entity_name):
+            # defaults bind the current row's loop variables (B023)
+            errors.append({"line": line, "metric_code": code_, "entity": entity, "error": msg})
 
         entity = entities.get(entity_name)
         if entity is None:

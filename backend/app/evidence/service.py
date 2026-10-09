@@ -101,7 +101,7 @@ def upload_evidence(
             content_type=mime_type,
         )
     except Exception as exc:
-        raise EvidenceError(f"Object storage rejected the upload: {exc}", 502)
+        raise EvidenceError(f"Object storage rejected the upload: {exc}", 502) from exc
 
     evidence = Evidence(
         id=evidence_id,

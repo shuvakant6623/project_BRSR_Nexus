@@ -33,7 +33,7 @@ from app.models import (
     MetricValue,
     ReportingPeriod,
 )
-from app.models.enums import AssignmentStatus, AuditAction, MetricValueStatus
+from app.models.enums import AuditAction, MetricValueStatus
 
 getcontext().prec = 28
 
@@ -208,7 +208,7 @@ class _Consolidator:
             )
 
         if semantics == _semantics("SUM"):
-            total = Decimal("0")
+            total = Decimal(0)
             unit = metric.canonical_unit or ""
             contributions: list[dict] = []
             missing: list[str] = []
@@ -295,8 +295,8 @@ def _semantics(name: str):
 def _scale(metric: MetricDefinition) -> Decimal:
     """Ratio metrics expressed as percent are scaled x100; unit ratios are x1."""
     if metric.unit_family == "percent" or metric.canonical_unit == "percent":
-        return Decimal("100")
-    return Decimal("1")
+        return Decimal(100)
+    return Decimal(1)
 
 
 def consolidate(

@@ -24,7 +24,6 @@ from app.models import (
     AppUser,
     Assignment,
     Entity,
-    FrameworkVersion,
     MetricDefinition,
     MetricValue,
     ReportingPeriod,
@@ -266,7 +265,7 @@ def save_value(
                 metric.unit_family, metric.canonical_unit,
             )
         except UnitConversionError as exc:
-            raise CollectionError(str(exc), 422)
+            raise CollectionError(str(exc), 422) from exc
 
     if action == "SUBMIT":
         _structural_validate(metric, payload)

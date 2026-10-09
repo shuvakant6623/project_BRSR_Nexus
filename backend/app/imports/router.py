@@ -3,7 +3,6 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 from fastapi.responses import PlainTextResponse
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.audit.service import record
@@ -12,7 +11,7 @@ from app.config import get_settings
 from app.db.session import get_db
 from app.imports import service
 from app.logging import request_id_var
-from app.models import AppUser, BulkImportJob
+from app.models import AppUser, BulkImportJob, ReportingPeriod
 from app.models.enums import AuditAction, JobStatus
 
 router = APIRouter(prefix="/api/v1/bulk-import", tags=["bulk-import"])
@@ -39,6 +38,13 @@ async def upload(
     user: AppUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
+    period = db.get(ReportingPeriod, period_id)
+    if period is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Reporting period not found")
+    if period.locked:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail="Reporting period is locked; imports are not allowed")
     if file.content_type not in ("text/csv", "application/vnd.ms-excel", "application/octet-stream"):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                             detail="Only CSV files are accepted")

@@ -1,7 +1,7 @@
 """All ORM models. Importing this package registers every table on Base.metadata."""
-from app.models.base import Base
 from app.models.audit import AuditEvent
 from app.models.auth import AppUser, UserEntityScope
+from app.models.base import Base
 from app.models.collection import Assignment, MetricValue, ReportingPeriod
 from app.models.consolidation import ConsolidationTrace
 from app.models.entity import Entity
@@ -18,26 +18,26 @@ from app.models.validation import ValidationException, ValidationRule
 from app.models.workflow import AISuggestion, BulkImportJob, Notification
 
 __all__ = [
-    "Base",
-    "AuditEvent",
+    "AISuggestion",
     "AppUser",
-    "UserEntityScope",
     "Assignment",
-    "MetricValue",
-    "ReportingPeriod",
+    "AuditEvent",
+    "Base",
+    "BulkImportJob",
     "ConsolidationTrace",
     "Entity",
     "Evidence",
     "FormulaDefinition",
     "FormulaVersion",
     "FrameworkVersion",
+    "GeneratedReport",
     "MetricDefinition",
     "MetricLineage",
-    "GeneratedReport",
+    "MetricValue",
+    "Notification",
     "ReportSnapshot",
+    "ReportingPeriod",
+    "UserEntityScope",
     "ValidationException",
     "ValidationRule",
-    "AISuggestion",
-    "BulkImportJob",
-    "Notification",
 ]

@@ -129,7 +129,7 @@ def create_assignment(
         db.commit()
     except service.CollectionError as exc:
         db.rollback()
-        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
     db.refresh(assignment)
     return _assignment_out(assignment)
 
@@ -227,7 +227,7 @@ def save_value(
         db.commit()
     except service.CollectionError as exc:
         db.rollback()
-        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
     db.refresh(value)
     return _value_out(value)
 
@@ -250,6 +250,6 @@ def review_assignment(
         db.commit()
     except service.CollectionError as exc:
         db.rollback()
-        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
     db.refresh(assignment)
     return _assignment_out(assignment)

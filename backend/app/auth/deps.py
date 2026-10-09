@@ -28,11 +28,10 @@ def get_current_user(
     try:
         payload = decode_token(credentials.credentials, expected_type="access")
     except Exception:
-        raise unauthorized
+        raise unauthorized from None
     user = db.get(AppUser, uuid.UUID(payload["sub"]))
     if user is None or not user.is_active:
         raise unauthorized
-    request_state_user = payload
     return user
 
 

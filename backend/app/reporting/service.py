@@ -1,11 +1,11 @@
 """Reporting engine (spec §18): period locking, immutable snapshots, async
 HTML/PDF generation from the snapshot — never from live mutable data."""
 import hashlib
+import html
 import json
 import uuid
 from datetime import UTC, datetime
 
-from minio import Minio
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -23,13 +23,11 @@ from app.models import (
     MetricValue,
     ReportingPeriod,
     ReportSnapshot,
-    UserEntityScope,
     ValidationException,
 )
 from app.models.enums import (
     AssignmentStatus,
     AuditAction,
-    JobStatus,
     MetricValueStatus,
     UserRole,
     ValidationExceptionStatus,
@@ -241,16 +239,20 @@ def render_snapshot_html(db: Session, snapshot_id: uuid.UUID) -> str:
         out = []
         for v in items:
             val = v["normalized_value"] or v["raw_value"] or "—"
+            # escape every snapshot-sourced string: the preview is served as
+            # text/html, so stored values must never be interpreted as markup
             out.append(
-                f"<tr><td class='mono'>{v['metric_code']}</td><td>{v['label']}</td>"
-                f"<td class='num'>{val}</td><td>{v['normalized_unit'] or v['raw_unit'] or ''}</td>"
-                f"<td>{v['submitted_by'] or ''}</td>"
+                f"<tr><td class='mono'>{html.escape(str(v['metric_code']))}</td>"
+                f"<td>{html.escape(str(v['label']))}</td>"
+                f"<td class='num'>{html.escape(str(val))}</td>"
+                f"<td>{html.escape(str(v['normalized_unit'] or v['raw_unit'] or ''))}</td>"
+                f"<td>{html.escape(str(v['submitted_by'] or ''))}</td>"
                 f"<td>{'✓' if v['evidence'] else '—'}</td></tr>"
             )
         return "".join(out)
 
     principle_blocks = "".join(
-        f"<h3>Principle {p[1] if p[0] == 'P' else p}</h3><table><thead><tr>"
+        f"<h3>Principle {html.escape(str(p[1] if p[0] == 'P' else p))}</h3><table><thead><tr>"
         "<th>Code</th><th>Indicator</th><th>Value</th><th>Unit</th><th>Submitted by</th><th>Evidence</th>"
         "</tr></thead><tbody>" + rows(items) + "</tbody></table>"
         for p, items in sorted(principles.items())
@@ -273,7 +275,8 @@ def render_snapshot_html(db: Session, snapshot_id: uuid.UUID) -> str:
 
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><style>
       body {{ font-family: Helvetica, Arial, sans-serif; margin: 36px; color: #12241c; }}
-      h1 {{ color: #0b3d2c; letter-spacing: .5px; }} h2 {{ color: #0b3d2c; border-bottom: 2px solid #0b3d2c; padding-bottom: 4px; }}
+      h1 {{ color: #0b3d2c; letter-spacing: .5px; }}
+      h2 {{ color: #0b3d2c; border-bottom: 2px solid #0b3d2c; padding-bottom: 4px; }}
       h3 {{ color: #0b3d2c; margin-top: 22px; }}
       table {{ width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 8px; }}
       th {{ background: #0b3d2c; color: white; text-align: left; padding: 5px 7px; }}
@@ -284,15 +287,17 @@ def render_snapshot_html(db: Session, snapshot_id: uuid.UUID) -> str:
     </style></head><body>
       <div class="cover">
         <h1>Business Responsibility and Sustainability Report</h1>
-        <p style="font-size:14px">Reporting period: <b>{period.label}</b></p>
+        <p style="font-size:14px">Reporting period: <b>{html.escape(period.label)}</b></p>
         <p style="font-size:12px">Generated from immutable snapshot · checksum {snapshot.checksum[:16]}…</p>
       </div>
       {consolidated_block}
       <h2>Section A — General Disclosures</h2>
-      <table><thead><tr><th>Code</th><th>Indicator</th><th>Value</th><th>Unit</th><th>Submitted by</th><th>Evidence</th></tr></thead>
+      <table><thead><tr><th>Code</th><th>Indicator</th><th>Value</th><th>Unit</th>
+      <th>Submitted by</th><th>Evidence</th></tr></thead>
       <tbody>{rows(by_section.get("A", []))}</tbody></table>
       <h2>Section B — Management and Process Disclosures</h2>
-      <table><thead><tr><th>Code</th><th>Indicator</th><th>Value</th><th>Unit</th><th>Submitted by</th><th>Evidence</th></tr></thead>
+      <table><thead><tr><th>Code</th><th>Indicator</th><th>Value</th><th>Unit</th>
+      <th>Submitted by</th><th>Evidence</th></tr></thead>
       <tbody>{rows(by_section.get("B", []))}</tbody></table>
       <h2>Section C — Principle-wise Performance Disclosures</h2>
       {principle_blocks or "<p>No Section C values in snapshot.</p>"}
@@ -307,7 +312,7 @@ def render_pdf(db: Session, report: GeneratedReport, html: str) -> str:
 
         pdf_bytes = WeasyHTML(string=html).write_pdf()
     except Exception as exc:
-        raise ReportingError(f"PDF rendering failed: {exc}", 500)
+        raise ReportingError(f"PDF rendering failed: {exc}", 500) from exc
     object_key = f"reports/{report.period_id}/{report.id}.pdf"
     client = storage.get_client()
     import io

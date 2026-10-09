@@ -158,7 +158,8 @@ def test_input_change_creates_new_version(client, ctx):
     assignment_id = _assignment(client, owner_h, ctx["plant_epsilon"], "C-P6-TOTAL-ENERGY")["id"]
     before = _detail(client, owner_h, assignment_id)
     # change the renewable input; dependent recompute runs inside save_value
-    _submit(client, owner_h, ctx["plant_epsilon"], "C-P6-GRID-NONRENEWABLE-MWH", 190, "MWh", period_id=ctx["period_fy25"])
+    _submit(client, owner_h, ctx["plant_epsilon"], "C-P6-GRID-NONRENEWABLE-MWH",
+            190, "MWh", period_id=ctx["period_fy25"])
     after = _detail(client, owner_h, assignment_id)
     assert len(after["values"]) == len(before["values"]) + 1
     assert float(after["values"][0]["raw_value"]) == pytest.approx(220.0, abs=1e-6)  # 190 + 30

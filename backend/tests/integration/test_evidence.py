@@ -1,7 +1,6 @@
 """Evidence-service integration tests: MinIO storage, hashes, signed URLs,
 RBAC, duplicates, and the VR-EVIDENCE-CORE control loop."""
 import hashlib
-import uuid
 
 import pytest
 from fastapi.testclient import TestClient
@@ -107,12 +106,7 @@ def test_upload_stores_in_minio_with_sha256(client, ctx):
     assert body["original_filename"] == "electricity_bill.pdf"
     assert body["size_bytes"] == len(b"%PDF-1.4 test bill")
 
-    # the object is really in MinIO
-    from app.infra import storage
-
-    client_minio = storage.get_client()
-    stat = client_minio.stat_object("brsr-evidence", None) if False else None
-    # verify via presigned URL fetch instead
+    # verify the object is really in object storage via the presigned URL
     dl = client.get(f"/api/v1/evidence/{body['id']}/download", headers=owner_h)
     assert dl.status_code == 200
     url = dl.json()["url"]

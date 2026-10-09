@@ -31,7 +31,6 @@ from app.models.enums import (
     MetricValueStatus,
     UserRole,
     ValidationExceptionStatus,
-    ValidationSeverity,
 )
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])

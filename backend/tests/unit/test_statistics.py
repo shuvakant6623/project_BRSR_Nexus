@@ -9,9 +9,9 @@ def test_iqr_flags_low_outlier():
     values = [0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.8562]
     bounds = iqr_bounds(values)
     assert bounds is not None
-    q1, q3, iqr, lower, upper = bounds
+    _q1, _q3, iqr, lower, upper = bounds
     assert iqr > 0
-    assert 0.8562 > upper or 0.0726 < lower
+    assert upper < 0.8562 or lower > 0.0726
 
 
 def test_iqr_skips_tiny_samples():

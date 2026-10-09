@@ -8,10 +8,9 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import select
-
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from app.main import app
 from app.seed import DEMO_PASSWORD, seed
@@ -46,7 +45,7 @@ def ctx(migrated_engine):
     from sqlalchemy import select
     from sqlalchemy.orm import sessionmaker
 
-    from app.models import Entity, FrameworkVersion, ReportingPeriod
+    from app.models import ReportingPeriod
 
     TestSession = sessionmaker(bind=migrated_engine, autoflush=False, expire_on_commit=False)
     with TestSession() as db:
@@ -111,7 +110,6 @@ def _approved_value(db, entity_id, period_id, fv_id, code, value, unit=None):
 
 def _entity(db, name, entity_type, parent_id=None):
     from app.models import Entity
-    from app.models.enums import EntityType
 
     entity = Entity(
         name=name, entity_type=entity_type, parent_id=parent_id,
@@ -125,9 +123,7 @@ def _entity(db, name, entity_type, parent_id=None):
 def test_golden_ratio_recalculation_4_percent_not_6_665(client, ctx):
     """Plant A: 100/1000 = 10%. Plant B: 300/9000 = 3.33%.
     Group: 400/10000 = 4% — and explicitly NOT the 6.665% naive average."""
-    from sqlalchemy import select
 
-    from app.models import ConsolidationTrace, Entity
 
     with ctx["db_maker"]() as db:
         sub = _entity(db, f"Golden Sub {uuid.uuid4().hex[:6]}", "SUBSIDIARY")
@@ -199,15 +195,13 @@ def test_zero_denominator_raises_explicitly(client, ctx):
         _approved_value(db, plant.id, ctx["period_id"], ctx["fv_id"], "A-REVENUE", 0)
         db.commit()
 
-        with pytest.raises(service.ConsolidationError, match="[Zz]ero denominator"):
+        with pytest.raises(service.ConsolidationError, match=r"[Zz]ero denominator"):
             service.consolidate(db, sub.id, "C-P6-GHG-INTENSITY", ctx["period_id"])
 
 
 def test_child_change_marks_parent_stale(client, ctx):
-    from sqlalchemy import select
 
     from app.consolidation import service
-    from app.models import ConsolidationTrace
 
     with ctx["db_maker"]() as db:
         sub = _entity(db, f"Stale {uuid.uuid4().hex[:6]}", "SUBSIDIARY")
@@ -263,10 +257,8 @@ def test_incomplete_consolidation_reports_missing_children(client, ctx):
         _approved_value(db, p1.id, ctx["period_id"], ctx["fv_id"], "C-P6-TOTAL-GHG", 100)
         # p2 has NO approved value (only an unapproved one that must be ignored)
         _approved_value(db, p2.id, ctx["period_id"], ctx["fv_id"], "A-REVENUE", 500)
-        from app.models import Assignment, MetricValue
+        from app.models import AppUser, Assignment, MetricValue
         from app.models.enums import AssignmentStatus, MetricValueStatus
-
-        from app.models import AppUser
 
         owner = db.scalar(select(AppUser).where(AppUser.email == "manager@example.local"))
         unapproved = Assignment(
@@ -277,8 +269,8 @@ def test_incomplete_consolidation_reports_missing_children(client, ctx):
         db.add(unapproved)
         db.flush()
         db.add(MetricValue(
-            assignment_id=unapproved.id, version=1, raw_value=Decimal("999"),
-            normalized_value=Decimal("999"), status=MetricValueStatus.IN_PROGRESS,
+            assignment_id=unapproved.id, version=1, raw_value=Decimal(999),
+            normalized_value=Decimal(999), status=MetricValueStatus.IN_PROGRESS,
             created_by=owner.id,
         ))
         db.commit()

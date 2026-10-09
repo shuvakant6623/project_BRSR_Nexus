@@ -13,8 +13,8 @@ Anything the resolver does not know raises CalculationError — missing inputs
 never silently become zero.
 """
 import re
-from decimal import Decimal, ROUND_HALF_EVEN, getcontext
-from typing import Callable
+from collections.abc import Callable
+from decimal import ROUND_HALF_EVEN, Decimal, getcontext
 
 getcontext().prec = 28
 

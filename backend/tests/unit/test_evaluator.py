@@ -8,9 +8,9 @@ from app.calculation.evaluator import CalculationError, evaluate
 
 def resolve(name: str) -> Decimal:
     table = {
-        "A": Decimal("10"),
-        "B": Decimal("4"),
-        "C-P6-GRID-RENEWABLE-MWH": Decimal("30"),
+        "A": Decimal(10),
+        "B": Decimal(4),
+        "C-P6-GRID-RENEWABLE-MWH": Decimal(30),
         "DIESEL_EF_KG_PER_LITRE": Decimal("2.68"),
     }
     if name not in table:

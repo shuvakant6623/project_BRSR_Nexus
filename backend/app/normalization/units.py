@@ -10,7 +10,7 @@ Workforce / count / percent / rate / intensity are single-unit families.
 
 Validation, calculation and consolidation must operate on normalized values.
 """
-from decimal import Decimal, ROUND_HALF_EVEN, getcontext
+from decimal import ROUND_HALF_EVEN, Decimal, getcontext
 
 getcontext().prec = 28
 
@@ -23,20 +23,20 @@ class UnitConversionError(Exception):
 
 # factor multiplies the raw unit into the family's canonical unit
 UNIT_FACTORS: dict[str, dict[str, Decimal]] = {
-    "energy": {"kWh": Decimal("0.001"), "MWh": Decimal("1"), "GJ": Decimal("1") / Decimal("3.6")},
-    "water": {"litre": Decimal("0.001"), "kL": Decimal("1"), "ML": Decimal("1000")},
-    "waste": {"kg": Decimal("0.001"), "tonne": Decimal("1")},
-    "emissions": {"kg CO2e": Decimal("0.001"), "tCO2e": Decimal("1")},
+    "energy": {"kWh": Decimal("0.001"), "MWh": Decimal(1), "GJ": Decimal(1) / Decimal("3.6")},
+    "water": {"litre": Decimal("0.001"), "kL": Decimal(1), "ML": Decimal(1000)},
+    "waste": {"kg": Decimal("0.001"), "tonne": Decimal(1)},
+    "emissions": {"kg CO2e": Decimal("0.001"), "tCO2e": Decimal(1)},
     "currency": {
-        "INR": Decimal("1") / Decimal("10000000"),
+        "INR": Decimal(1) / Decimal(10000000),
         "INR lakh": Decimal("0.01"),
-        "INR crore": Decimal("1"),
+        "INR crore": Decimal(1),
     },
-    "fuel_volume": {"litre": Decimal("1"), "kL": Decimal("1000")},
-    "workforce": {"count": Decimal("1")},
-    "count": {"count": Decimal("1")},
-    "percent": {"percent": Decimal("1")},
-    "rate": {"per_million_manhours": Decimal("1")},
+    "fuel_volume": {"litre": Decimal(1), "kL": Decimal(1000)},
+    "workforce": {"count": Decimal(1)},
+    "count": {"count": Decimal(1)},
+    "percent": {"percent": Decimal(1)},
+    "rate": {"per_million_manhours": Decimal(1)},
 }
 
 

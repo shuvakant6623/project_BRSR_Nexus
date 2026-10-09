@@ -20,6 +20,12 @@
   evidence object.
 - **AI**: document text treated as untrusted data, never instructions
   (prompt-injection mitigation §9.3); extraction is draft-only with per-field
-  confidence; acceptance is an explicit logged human action.
+  confidence; acceptance is an explicit logged human action. Suggestions are
+  ownership-scoped: only the assignment's data owner (or an admin) may
+  trigger extraction, accept or reject a suggestion, and suggestion listings
+  are filtered to the caller's own assignments or entity scope.
+- **Report rendering**: snapshot-sourced strings (labels, codes, emails,
+  units) are HTML-escaped before the report preview is served, so stored
+  values can never be interpreted as markup in the browser.
 - **Config**: all secrets via environment variables; dev secrets are clearly
   labelled demo-only.

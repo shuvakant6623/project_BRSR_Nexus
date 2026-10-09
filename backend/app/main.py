@@ -7,22 +7,23 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.ai.router import router as ai_router
 from app.api import health
 from app.api.errors import register_exception_handlers
 from app.api.users import router as users_router
 from app.audit.router import router as audit_router
 from app.auth.router import router as auth_router
-from app.config import get_settings
 from app.calculation.router import router as calculation_router
 from app.collection.router import router as collection_router
-from app.dashboard.router import router as dashboard_router
+from app.config import get_settings
 from app.consolidation.router import router as consolidation_router
+from app.dashboard.router import router as dashboard_router
 from app.entities.router import router as entities_router
 from app.evidence.router import router as evidence_router
 from app.framework.router import router as framework_router
-from app.lineage.router import router as lineage_router
-from app.ai.router import router as ai_router
 from app.imports.router import router as imports_router
+from app.lineage.router import router as lineage_router
+from app.logging import configure_logging, request_id_var
 from app.notifications.router import router as notifications_router
 from app.reporting.router import router as reporting_router
 from app.trends.router import router as trends_router
@@ -45,7 +46,10 @@ async def lifespan(app: FastAPI):
         storage.ensure_bucket()
         logger.info("s3 bucket ensured", extra={"endpoint": "lifespan", "status": 0, "duration_ms": 0})
     except Exception:
-        logger.exception("s3 bucket init failed — /readyz will report degraded", extra={"endpoint": "lifespan", "status": 0, "duration_ms": 0})
+        logger.exception(
+            "s3 bucket init failed — /readyz will report degraded",
+            extra={"endpoint": "lifespan", "status": 0, "duration_ms": 0},
+        )
     yield
 
 
@@ -112,7 +116,6 @@ def create_app() -> FastAPI:
     app.include_router(ai_router)
     app.include_router(evidence_router)
     app.include_router(assurance_router)
-
 
     register_exception_handlers(app)
     return app

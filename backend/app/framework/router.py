@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session
 
 from app.audit.service import record
 from app.auth.deps import get_current_user, require_roles
-from app.config import get_settings
 from app.db.session import get_db
 from app.framework.service import (
     FrameworkMetadataError,
@@ -280,7 +279,7 @@ def add_metric(
         db.commit()
     except FrameworkMetadataError as exc:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     db.refresh(metric)
     return MetricOut(
         metric_code=metric.metric_code, question_code=metric.question_code,

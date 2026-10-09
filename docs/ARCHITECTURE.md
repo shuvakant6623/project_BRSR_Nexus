@@ -40,7 +40,7 @@ Celery + Next.js 15).
 Each domain module is self-contained (`service.py` for business logic, `router.py` for HTTP):
 auth, entities, framework, collection, normalization, validation (+ statistics), calculation,
 consolidation, evidence, audit, lineage, reporting, dashboard, trends, imports, notifications,
-ai, workflow. `workers/` contains ONLY thin Celery task wrappers — all logic lives in domain
+ai. `workers/` contains ONLY thin Celery task wrappers — all logic lives in domain
 services and is testable without Celery. `audit` is a shared dependency and never imports
 business modules.
 

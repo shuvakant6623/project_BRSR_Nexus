@@ -1,0 +1,26 @@
+# Ruff configuration — `make lint` runs `ruff check app tests` from backend/.
+line-length = 120
+
+[lint]
+select = [
+    "E", "W", # pycodestyle
+    "F",      # pyflakes (unused imports/variables — real defects)
+    "I",      # import order
+    "B",      # bugbear
+    "UP",     # pyupgrade
+    "SIM",    # simplify
+    "RET",    # return style
+    "C4",     # comprehensions
+    "FURB",   # refurb
+    "RUF",    # ruff-specific
+]
+ignore = [
+    # FastAPI's Depends() in argument defaults is the framework idiom, used throughout
+    "B008",
+    # deliberate blind-except graceful degradation (health checks, AI providers, recompute)
+    "BLE001",
+    # naive local dates are intended for due-date/reminder logic
+    "DTZ011",
+    # en-dashes in docstrings/UI strings are intentional typography
+    "RUF001",
+]

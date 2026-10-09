@@ -44,6 +44,7 @@ def ctx(migrated_engine):
     with TestSession() as db:
         seed(db)
         yield {
+            "fy24": db.scalar(select(ReportingPeriod).where(ReportingPeriod.label == "FY2024-25")).id,
             "fy25": db.scalar(select(ReportingPeriod).where(ReportingPeriod.label == "FY2025-26")).id,
             "alpha": db.scalar(select(Entity).where(Entity.name == "Plant Alpha")).id,
         }
@@ -80,10 +81,10 @@ def test_bulk_import_creates_drafts_never_submitted(client, ctx):
     job_id = r.json()["job_id"]
 
     # process synchronously (Celery task body is a thin wrapper)
-    from app.imports.service import process_import
     from sqlalchemy import select
     from sqlalchemy.orm import sessionmaker
 
+    from app.imports.service import process_import
     from app.models import AppUser, BulkImportJob
 
     TestSession = sessionmaker(bind=TEST_STATE["engine"], autoflush=False, expire_on_commit=False)
@@ -117,3 +118,29 @@ def test_import_requires_csv(client, ctx):
 def test_foreign_job_hidden(client, ctx):
     r = client.get(f"/api/v1/bulk-import/{uuid.uuid4()}", headers=_login(client, "owner-beta@example.local"))
     assert r.status_code == 404
+
+
+# --- regression tests: upload-time period validation -------------------------
+
+def test_import_unknown_period_rejected_404(client, ctx):
+    """Regression: an import against a nonexistent period used to be accepted
+    (202) and only fail later, row by row."""
+    r = client.post(
+        "/api/v1/bulk-import",
+        params={"period_id": str(uuid.uuid4())},
+        files={"file": ("import.csv", io.BytesIO(b"metric_code,entity_name,value,unit\n"), "text/csv")},
+        headers=_login(client, "owner-alpha@example.local"),
+    )
+    assert r.status_code == 404
+
+
+def test_import_locked_period_rejected_409(client, ctx):
+    """Regression: imports against a locked period must be refused outright.
+    FY2024-25 ships pre-locked in the seed (historical period)."""
+    r = client.post(
+        "/api/v1/bulk-import",
+        params={"period_id": str(ctx["fy24"])},
+        files={"file": ("import.csv", io.BytesIO(b"metric_code,entity_name,value,unit\n"), "text/csv")},
+        headers=_login(client, "owner-alpha@example.local"),
+    )
+    assert r.status_code == 409

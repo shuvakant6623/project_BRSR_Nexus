@@ -46,6 +46,7 @@ def ctx(migrated_engine):
         yield {
             "fy25": db.scalar(select(ReportingPeriod).where(ReportingPeriod.label == "FY2025-26")).id,
             "alpha": db.scalar(select(Entity).where(Entity.name == "Plant Alpha")).id,
+            "beta": db.scalar(select(Entity).where(Entity.name == "Plant Beta")).id,
         }
 
 
@@ -54,23 +55,33 @@ def _login(client, email):
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
-def _upload_evidence(client, headers, ctx):
-    from datetime import date
-
-    # create a value + evidence via API on a non-core metric
+def _upload_evidence(client, headers, ctx, entity_key="alpha"):
+    """Save a draft value + upload evidence on the owner's first editable
+    assignment for the entity; returns the metric_value id."""
     rows = client.get(
-        f"/api/v1/assignments?entity_id={ctx['alpha']}&status=IN_PROGRESS",
+        f"/api/v1/assignments?entity_id={ctx[entity_key]}&status=IN_PROGRESS",
         headers=headers,
     ).json()
-    target = next(a for a in rows if a["metric_code"] == "C-P6-WATER-DISCHARGE")
+    if not rows:
+        rows = client.get(
+            f"/api/v1/assignments?entity_id={ctx[entity_key]}&status=NOT_STARTED",
+            headers=headers,
+        ).json()
+    target = rows[0]
     detail = client.get(f"/api/v1/assignments/{target['id']}", headers=headers).json()
+    metric = detail["metric"]
+    body = {"action": "SAVE_DRAFT", "expected_last_version": detail["latest_version"]}
+    if metric["data_type"] == "numeric":
+        body["raw_value"] = 3200
+        units = metric.get("allowed_units") or ([metric["canonical_unit"]] if metric["canonical_unit"] else [])
+        if units:
+            body["raw_unit"] = units[0]
+    else:
+        body["qualitative_value"] = "recorded meter reading for the period"
     saved = client.post(
-        f"/api/v1/assignments/{target['id']}/value",
-        json={"action": "SAVE_DRAFT", "raw_value": 3200, "raw_unit": "kL",
-              "expected_last_version": detail["latest_version"]},
-        headers=headers,
+        f"/api/v1/assignments/{target['id']}/value", json=body, headers=headers,
     )
-    assert saved.status_code == 201
+    assert saved.status_code == 201, saved.json()
     up = client.post(
         "/api/v1/evidence",
         params={"metric_value_id": saved.json()["id"]},
@@ -142,3 +153,85 @@ def test_demo_provider_is_labelled(client, ctx):
     assert provider.name == "local_demo"
     candidates = provider.extract("bill.txt", b"Total consumed: 1,234 kWh")
     assert candidates and candidates[0]["unit"] == "kWh"
+
+
+# --- regression tests: suggestion ownership (IDOR) and list scoping ----------
+
+def test_owner_cannot_extract_from_anothers_evidence(client, ctx):
+    """Regression: extraction used to be triggerable by any data owner on any
+    evidence; it must be restricted to the assignment's owner (or admin)."""
+    alpha_h = _login(client, "owner-alpha@example.local")
+    value_id = _upload_evidence(client, alpha_h, ctx)
+    evidence = client.get(
+        f"/api/v1/evidence/by-value/{value_id}", headers=alpha_h
+    ).json()[0]
+    beta_h = _login(client, "owner-beta@example.local")
+    r = client.post(f"/api/v1/ai-suggestions/extract/{evidence['id']}", headers=beta_h)
+    assert r.status_code == 403
+    # the owner still can
+    assert client.post(
+        f"/api/v1/ai-suggestions/extract/{evidence['id']}", headers=alpha_h
+    ).status_code == 202
+
+
+def test_owner_cannot_accept_anothers_suggestion(client, ctx):
+    """Regression: accepting used to let any data owner create a draft value on
+    an assignment they do not own."""
+    alpha_h = _login(client, "owner-alpha@example.local")
+    value_id = _upload_evidence(client, alpha_h, ctx)
+    evidence = client.get(
+        f"/api/v1/evidence/by-value/{value_id}", headers=alpha_h
+    ).json()[0]
+    client.post(f"/api/v1/ai-suggestions/extract/{evidence['id']}", headers=alpha_h)
+    suggestion = next(
+        s for s in client.get(
+            "/api/v1/ai-suggestions?pending_only=true", headers=alpha_h
+        ).json()
+        if s["evidence_id"] == evidence["id"]
+    )
+    beta_h = _login(client, "owner-beta@example.local")
+    r = client.post(
+        f"/api/v1/ai-suggestions/{suggestion['id']}/accept", json={}, headers=beta_h
+    )
+    assert r.status_code == 403
+    r = client.post(
+        f"/api/v1/ai-suggestions/{suggestion['id']}/reject", headers=beta_h
+    )
+    assert r.status_code == 403
+    # alpha can still accept it (creates the draft; double-accept would 409)
+    r = client.post(
+        f"/api/v1/ai-suggestions/{suggestion['id']}/accept", json={}, headers=alpha_h
+    )
+    assert r.status_code == 200
+
+
+def test_suggestion_list_scoped_to_owner(client, ctx):
+    """Regression: GET /ai-suggestions used to leak every user's suggestions;
+    a data owner now sees only suggestions on their own assignments."""
+    alpha_h = _login(client, "owner-alpha@example.local")
+    beta_h = _login(client, "owner-beta@example.local")
+    # a suggestion on ALPHA's assignment must not appear in BETA's list
+    alpha_value = _upload_evidence(client, alpha_h, ctx)
+    alpha_evidence = client.get(
+        f"/api/v1/evidence/by-value/{alpha_value}", headers=alpha_h
+    ).json()[0]
+    client.post(f"/api/v1/ai-suggestions/extract/{alpha_evidence['id']}", headers=alpha_h)
+    assert all(
+        s["evidence_id"] != alpha_evidence["id"]
+        for s in client.get("/api/v1/ai-suggestions", headers=beta_h).json()
+    )
+    # a suggestion on BETA's own assignment does appear
+    beta_value = _upload_evidence(client, beta_h, ctx, entity_key="beta")
+    beta_evidence = client.get(
+        f"/api/v1/evidence/by-value/{beta_value}", headers=beta_h
+    ).json()[0]
+    client.post(f"/api/v1/ai-suggestions/extract/{beta_evidence['id']}", headers=beta_h)
+    beta_id = client.get("/api/v1/auth/me", headers=beta_h).json()["id"]
+    mine = client.get("/api/v1/ai-suggestions", headers=beta_h).json()
+    assert any(s["evidence_id"] == beta_evidence["id"] for s in mine)
+    admin_h = _login(client, "admin@example.local")
+    for s in mine:
+        assignment = client.get(
+            f"/api/v1/assignments/{s['assignment_id']}", headers=admin_h
+        ).json()["assignment"]
+        assert assignment["owner_user_id"] == beta_id
