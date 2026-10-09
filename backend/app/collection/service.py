@@ -34,6 +34,7 @@ from app.models.enums import (
     AuditAction,
     MetricValueStatus,
     NotificationType,
+    UserRole,
     ValidationExceptionStatus,
     ValidationSeverity,
 )
@@ -182,9 +183,18 @@ def _structural_validate(metric: MetricDefinition, payload: dict) -> None:
         if payload.get("raw_value") is None:
             raise CollectionError("Numeric value is required", 422)
         try:
-            Decimal(str(payload["raw_value"]))
-        except InvalidOperation as exc:
-            raise CollectionError("Value is not a valid number", 422) from exc
+            val = Decimal(str(payload["raw_value"]))
+        except InvalidOperation:
+            raise CollectionError("Value is not a valid number", 422)
+        # Physical quantities can never be negative
+        NON_NEGATIVE_FAMILIES = frozenset({
+            "energy", "emissions", "water", "waste", "fuel_volume",
+            "currency", "count", "workforce",
+        })
+        if metric.unit_family in NON_NEGATIVE_FAMILIES and val < 0:
+            raise CollectionError(
+                f"{metric.label} cannot be negative (received {val})", 422,
+            )
         if metric.allowed_units and payload.get("raw_unit") not in metric.allowed_units:
             raise CollectionError(
                 f"Unit {payload.get('raw_unit')!r} is not allowed for this metric "
@@ -206,7 +216,16 @@ def save_value(
     expected_last_version: int | None = None,
     request_id: str | None = None,
 ) -> MetricValue:
-    if assignment.owner_user_id != actor.id and actor.role.name != "ADMIN":
+    if actor.role == UserRole.ASSESSOR:
+        raise CollectionError("Assessors have read-only access and cannot edit values", 403)
+    is_override = bool(payload.get("is_override", False))
+    override_reason = payload.get("override_reason")
+    if is_override:
+        if actor.role not in (UserRole.ADMIN, UserRole.ESG_MANAGER):
+            raise CollectionError("Only ADMIN or ESG_MANAGER may record an entity-level override", 403)
+        if not override_reason or not str(override_reason).strip():
+            raise CollectionError("An override justification (override_reason) is required", 422)
+    elif assignment.owner_user_id != actor.id and actor.role.name != "ADMIN":
         raise CollectionError("Only the assignment owner may edit this metric", 403)
     period = db.get(ReportingPeriod, assignment.period_id)
     if period is None:
@@ -226,6 +245,18 @@ def save_value(
     # unit normalization (spec §10): every numeric value stores its canonical form
     normalized_value = normalized_unit = None
     if payload.get("raw_value") is not None:
+        try:
+            val = Decimal(str(payload["raw_value"]))
+        except InvalidOperation:
+            raise CollectionError("Value is not a valid number", 422)
+        NON_NEGATIVE_FAMILIES = frozenset({
+            "energy", "emissions", "water", "waste", "fuel_volume",
+            "currency", "count", "workforce",
+        })
+        if metric.unit_family in NON_NEGATIVE_FAMILIES and val < 0:
+            raise CollectionError(
+                f"{metric.label} cannot be negative (received {val})", 422,
+            )
         try:
             from app.normalization.units import UnitConversionError, normalize_value
 
@@ -293,6 +324,8 @@ def save_value(
         normalized_unit=normalized_unit,
         qualitative_value=payload.get("qualitative_value"),
         status=new_status,
+        is_override=is_override,
+        override_reason=override_reason if is_override else None,
         created_by=actor.id,
         submitted_by=actor.id if action == "SUBMIT" else None,
         submitted_at=datetime.now(UTC) if action == "SUBMIT" else None,
@@ -315,7 +348,8 @@ def save_value(
         old_value={"version": last.version, "raw_value": str(last.raw_value) if last else None}
         if last else None,
         new_value={"version": version, "raw_value": str(value.raw_value) if value.raw_value else None,
-                   "raw_unit": value.raw_unit, "action": action},
+                   "raw_unit": value.raw_unit, "action": action, "is_override": is_override},
+        reason="Entity-level override recorded" if is_override else None,
         request_id=request_id,
     )
 
@@ -380,6 +414,18 @@ def review(
             raise CollectionError(
                 "Cannot approve: unresolved BLOCKING validation exceptions exist for this assignment"
             )
+        unexplained_yoy = db.scalar(
+            select(ValidationException).where(
+                ValidationException.assignment_id == assignment.id,
+                ValidationException.rule_code.like("%YOY%"),
+                ValidationException.status == ValidationExceptionStatus.OPEN,
+            )
+        )
+        if unexplained_yoy is not None and not comment and not unexplained_yoy.explanation:
+            raise CollectionError(
+                f"Cannot approve: significant year-on-year anomaly ({unexplained_yoy.rule_code}) requires an explanation",
+                422,
+            )
         new_status = AssignmentStatus.APPROVED
         audit_action = AuditAction.APPROVED
     elif action in ("NEEDS_CORRECTION", "REJECT"):
@@ -403,11 +449,16 @@ def review(
     db.flush()
 
     if new_status == AssignmentStatus.APPROVED:
-        # consolidated ancestors of this entity are now potentially stale
-        from app.consolidation.service import mark_stale_upstream
+        # Automatically recompute every affected ancestor and dependent metric
+        from app.consolidation.service import recompute_ancestors_on_approval
 
-        mark_stale_upstream(db, assignment.entity_id, assignment.metric_code,
-                            assignment.period_id)
+        try:
+            recompute_ancestors_on_approval(
+                db, assignment.entity_id, assignment.metric_code,
+                assignment.period_id, actor=actor, request_id=request_id,
+            )
+        except Exception as exc:
+            raise CollectionError(f"Approval failed during ancestor consolidation recomputation: {exc}", 500)
     record(
         db, action=audit_action, object_type="assignment", object_id=assignment.id,
         actor_id=actor.id, actor_label=actor.email,

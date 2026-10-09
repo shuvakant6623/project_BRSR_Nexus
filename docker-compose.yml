@@ -60,6 +60,8 @@ services:
       S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-}
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-32b}
       CORS_ORIGINS: http://localhost:3000
+    volumes:
+      - ./backend:/app
     ports:
       - "8000:8000"
     depends_on:
@@ -87,6 +89,8 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY:-brsr-secret}
       S3_BUCKET: ${S3_BUCKET:-brsr-evidence}
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-in-production-32b}
+    volumes:
+      - ./backend:/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -100,6 +104,8 @@ services:
     command: celery -A app.workers.celery_app.celery_app beat --loglevel=info
     environment:
       REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app
     depends_on:
       redis:
         condition: service_healthy

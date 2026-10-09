@@ -32,6 +32,8 @@ class ConsolidationTrace(UUIDPrimaryKeyMixin, Base):
     aggregation_semantics: Mapped[str | None] = mapped_column(String(30))
     is_stale: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     stale_reason: Mapped[str | None] = mapped_column(String(255))
+    is_complete: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    missing_child_ids: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     computed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -58,7 +58,7 @@ export default function TrendsPage() {
         Cross-year comparisons follow <strong>metric lineage</strong> — years without a continuity
         mapping are shown as gaps, never silently compared against differently-defined metrics.
       </p>
-      <div className="filter-row rise rise-d2">
+      <div className="filter-row rise rise-d2" style={{ position: "relative", zIndex: 100 }}>
         <StyledSelect
           ariaLabel="Metric"
           value={metric}

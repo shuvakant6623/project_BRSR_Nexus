@@ -91,3 +91,102 @@ def create_metric(db: Session, framework_version_id: uuid.UUID, data: dict) -> M
     db.add(metric)
     db.flush()
     return metric
+
+
+def create_framework_version(db: Session, data: dict) -> FrameworkVersion:
+    existing = db.scalar(
+        select(FrameworkVersion).where(FrameworkVersion.version_code == data["version_code"])
+    )
+    if existing:
+        raise FrameworkMetadataError(f"Framework version code '{data['version_code']}' already exists")
+    effective_from = data.get("effective_from")
+    effective_to = data.get("effective_to")
+    if effective_from and effective_to and effective_to < effective_from:
+        raise FrameworkMetadataError("effective_to must be on or after effective_from")
+    version = FrameworkVersion(**data)
+    db.add(version)
+    db.flush()
+    return version
+
+
+def activate_version(db: Session, version_id: uuid.UUID) -> FrameworkVersion:
+    version = db.get(FrameworkVersion, version_id)
+    if version is None:
+        raise FrameworkMetadataError("Framework version not found")
+
+    # Check for date overlaps with other active framework versions
+    active_versions = list(
+        db.scalars(
+            select(FrameworkVersion).where(
+                FrameworkVersion.id != version_id,
+                FrameworkVersion.is_active.is_(True),
+            )
+        ).all()
+    )
+    v_start = version.effective_from
+    v_end = version.effective_to
+    for other in active_versions:
+        o_start = other.effective_from
+        o_end = other.effective_to
+        # If dates are defined, check for overlap
+        if v_start and o_start:
+            no_overlap = (v_end and v_end < o_start) or (o_end and v_start > o_end)
+            if not no_overlap:
+                raise FrameworkMetadataError(
+                    f"Conflict: Version dates [{v_start} to {v_end or 'open'}] overlap with "
+                    f"already active version '{other.version_code}' [{o_start} to {o_end or 'open'}]"
+                )
+
+    version.is_active = True
+    db.flush()
+    return version
+
+
+def audit_framework_coverage(db: Session, version_id: uuid.UUID) -> dict:
+    version = db.get(FrameworkVersion, version_id)
+    if version is None:
+        raise FrameworkMetadataError("Framework version not found")
+
+    metrics = list(
+        db.scalars(
+            select(MetricDefinition).where(MetricDefinition.framework_version_id == version_id)
+        ).all()
+    )
+
+    sections_found = {m.section for m in metrics}
+    principles_found = {m.principle for m in metrics if m.principle}
+    all_principles = [f"P{i}" for i in range(1, 10)]
+    missing_principles = [p for p in all_principles if p not in principles_found]
+    core_metrics = [m for m in metrics if m.brsr_core]
+
+    # Validate ratios
+    codes = {m.metric_code for m in metrics}
+    ratio_defects = []
+    for m in metrics:
+        if m.aggregation_semantics == AggregationSemantics.RATIO_RECALCULATION:
+            if not m.ratio_numerator_code or m.ratio_numerator_code not in codes:
+                ratio_defects.append(f"{m.metric_code}: numerator '{m.ratio_numerator_code}' missing")
+            if not m.ratio_denominator_code or m.ratio_denominator_code not in codes:
+                ratio_defects.append(f"{m.metric_code}: denominator '{m.ratio_denominator_code}' missing")
+
+    has_all_sections = {"A", "B", "C"}.issubset(sections_found)
+    has_all_principles = len(missing_principles) == 0
+    has_core = len(core_metrics) >= 9
+
+    is_compliant = has_all_sections and has_all_principles and has_core and len(ratio_defects) == 0
+
+    return {
+        "version_id": str(version_id),
+        "version_code": version.version_code,
+        "is_active": version.is_active,
+        "total_metrics": len(metrics),
+        "sections": sorted(list(sections_found)),
+        "missing_sections": sorted(list({"A", "B", "C"} - sections_found)),
+        "principles_covered": sorted(list(principles_found)),
+        "missing_principles": missing_principles,
+        "core_indicator_count": len(core_metrics),
+        "core_metric_codes": [m.metric_code for m in core_metrics],
+        "ratio_defects": ratio_defects,
+        "is_coverage_complete": is_compliant,
+    }
+

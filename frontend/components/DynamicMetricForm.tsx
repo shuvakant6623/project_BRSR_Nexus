@@ -43,9 +43,16 @@ export function DynamicMetricForm({
   const isCategorical = metric.data_type === "categorical";
   const isBoolean = metric.data_type === "boolean";
 
+  const NON_NEGATIVE_FAMILIES = ["energy", "emissions", "water", "waste", "fuel_volume", "currency", "count", "workforce"];
+  const isNonNegative = !metric.unit_family || NON_NEGATIVE_FAMILIES.includes(metric.unit_family);
+
   async function submit(action: "SAVE_DRAFT" | "SUBMIT") {
     setError(null);
     setSuccess(null);
+    if (isNumeric && value.raw_value !== null && !Number.isNaN(value.raw_value) && isNonNegative && value.raw_value < 0) {
+      setError(`${metric.label} cannot be negative (entered: ${value.raw_value})`);
+      return;
+    }
     if (action === "SUBMIT" && metric.required) {
       if (isNumeric && (value.raw_value === null || Number.isNaN(value.raw_value))) {
         setError("A numeric value is required before submitting");
@@ -85,6 +92,8 @@ export function DynamicMetricForm({
             Value
             <input
               type="number"
+              min={isNonNegative ? "0" : undefined}
+              step="any"
               value={value.raw_value ?? ""}
               disabled={disabled}
               onChange={(e) =>

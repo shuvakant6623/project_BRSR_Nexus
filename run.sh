@@ -2,10 +2,12 @@
 # =============================================================================
 # BRSR Reporting Portal — MASTER RUN SCRIPT
 #
-# One command from zero to a fully demo-ready system:
+# Control commands:
 #   ./run.sh              fresh start (wipes volumes, reseeds, consolidates)
 #   ./run.sh --keep       keep existing data (migrate + restart only)
 #   ./run.sh --test       additionally run the backend test suite
+#   ./run.sh --stop       stop frontend, backend, celery, and docker containers
+#   ./run.sh --stop -v    stop containers and remove volumes (clean wipe)
 # =============================================================================
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -13,17 +15,67 @@ cd "$(dirname "$0")"
 # ------------------------------------------------------------------ arguments
 MODE="fresh"
 RUN_TESTS="no"
+STOP_ONLY="no"
+STOP_VOLUMES="no"
+
 for arg in "$@"; do
   case "$arg" in
     --keep) MODE="keep" ;;
     --test) RUN_TESTS="yes" ;;
-    *) echo "Unknown option: $arg (use --keep and/or --test)"; exit 1 ;;
+    --stop) STOP_ONLY="yes" ;;
+    -v|--volumes) STOP_VOLUMES="yes" ;;
+    -h|--help)
+      echo "BRSR Reporting Portal — Control Script"
+      echo ""
+      echo "Usage: ./run.sh [OPTIONS]"
+      echo ""
+      echo "Options:"
+      echo "  (no args)     Fresh start (rebuilds images, wipes volumes, reseeds, consolidates)"
+      echo "  --keep        Keep existing data (migrate + restart only)"
+      echo "  --test        Additionally run the backend test suite after starting"
+      echo "  --stop        Stop frontend, backend, celery, and docker compose stack"
+      echo "  --stop -v     Stop containers and remove volumes (clean wipe)"
+      echo "  -h, --help    Show this help message"
+      exit 0
+      ;;
+    *) echo "Unknown option: $arg (use --keep, --test, --stop, or --help)"; exit 1 ;;
   esac
 done
 
 # ------------------------------------------------------------------ colours
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m';  NC='\033[0m'
+
+# ------------------------------------------------------------------ stop handler
+if [ "$STOP_ONLY" = "yes" ]; then
+  echo -e "${CYAN}Stopping BRSR Reporting Portal stack...${NC}"
+
+  if command -v docker &>/dev/null && docker compose version &>/dev/null; then
+    if [ "$STOP_VOLUMES" = "yes" ]; then
+      echo -e "  ${YELLOW}ℹ Stopping containers and removing volumes...${NC}"
+      docker compose down -v --remove-orphans 2>&1 | sed 's/^/  /' || true
+      echo -e "  ${GREEN}✔ Docker containers and volumes removed${NC}"
+    else
+      echo -e "  ${YELLOW}ℹ Stopping and removing containers (keeping volumes)...${NC}"
+      docker compose down --remove-orphans 2>&1 | sed 's/^/  /' || true
+      echo -e "  ${GREEN}✔ Docker containers stopped and removed${NC}"
+    fi
+  else
+    echo -e "  ${YELLOW}ℹ Docker or docker compose not available${NC}"
+  fi
+
+  # Stop any stray local processes that may have been started on host ports
+  if command -v pkill &>/dev/null; then
+    pkill -f "uvicorn app.main:app" 2>/dev/null && echo -e "  ${GREEN}✔ Local uvicorn processes terminated${NC}" || true
+    pkill -f "celery -A app.workers.celery_app" 2>/dev/null && echo -e "  ${GREEN}✔ Local celery processes terminated${NC}" || true
+  fi
+
+  echo
+  echo -e "${GREEN}=============================================================${NC}"
+  echo -e "${GREEN}  All services (frontend, backend, celery, docker) stopped.${NC}"
+  echo -e "${GREEN}=============================================================${NC}"
+  exit 0
+fi
 
 STEP_NO=0
 TOTAL_STEPS=8
