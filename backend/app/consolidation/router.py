@@ -48,6 +48,8 @@ class TraceOut(BaseModel):
     aggregation_semantics: str | None
     is_stale: bool
     stale_reason: str | None
+    is_complete: bool = True
+    missing_child_ids: list[str] = []
     computed_at: str | None
     contributing_value_count: int
     contributions: list[ContributionOut]
@@ -101,6 +103,8 @@ def _trace_out(db: Session, trace: ConsolidationTrace) -> TraceOut:
         aggregation_semantics=trace.aggregation_semantics,
         is_stale=trace.is_stale,
         stale_reason=trace.stale_reason,
+        is_complete=trace.is_complete,
+        missing_child_ids=trace.missing_child_ids or [],
         computed_at=trace.computed_at.isoformat() if trace.computed_at else None,
         contributing_value_count=len(value_ids),
         contributions=contributions,

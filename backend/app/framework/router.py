@@ -15,7 +15,13 @@ from app.audit.service import record
 from app.auth.deps import get_current_user, require_roles
 from app.config import get_settings
 from app.db.session import get_db
-from app.framework.service import FrameworkMetadataError, create_metric
+from app.framework.service import (
+    FrameworkMetadataError,
+    activate_version,
+    audit_framework_coverage,
+    create_framework_version,
+    create_metric,
+)
 from app.models import (
     AppUser,
     FormulaDefinition,
@@ -39,6 +45,15 @@ class FrameworkVersionOut(BaseModel):
     effective_to: object | None
     is_active: bool
     metric_count: int
+
+
+class FrameworkVersionCreate(BaseModel):
+    version_code: str
+    name: str
+    description: str | None = None
+    effective_from: object | None = None
+    effective_to: object | None = None
+    is_active: bool = False
 
 
 class MetricOut(BaseModel):
@@ -127,6 +142,78 @@ def list_versions(
             )
         )
     return out
+
+
+@router.post("/versions", response_model=FrameworkVersionOut, status_code=201)
+def add_framework_version(
+    body: FrameworkVersionCreate,
+    user: AppUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> FrameworkVersionOut:
+    try:
+        version = create_framework_version(db, body.model_dump())
+        record(
+            db, action=AuditAction.CREATED, object_type="framework_version",
+            object_id=version.id, actor_id=user.id, actor_label=user.email,
+            new_value={"version_code": version.version_code, "name": version.name},
+        )
+        db.commit()
+    except FrameworkMetadataError as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+    db.refresh(version)
+    return FrameworkVersionOut(
+        id=version.id, version_code=version.version_code, name=version.name,
+        description=version.description, effective_from=version.effective_from,
+        effective_to=version.effective_to, is_active=version.is_active,
+        metric_count=0,
+    )
+
+
+@router.post("/versions/{version_id}/activate", response_model=FrameworkVersionOut)
+def activate_framework_version(
+    version_id: uuid.UUID,
+    user: AppUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> FrameworkVersionOut:
+    try:
+        version = activate_version(db, version_id)
+        record(
+            db, action=AuditAction.UPDATED, object_type="framework_version",
+            object_id=version.id, actor_id=user.id, actor_label=user.email,
+            new_value={"is_active": True},
+        )
+        db.commit()
+    except FrameworkMetadataError as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+    db.refresh(version)
+    count = len(
+        db.scalars(
+            select(MetricDefinition.metric_code).where(
+                MetricDefinition.framework_version_id == version.id
+            )
+        ).all()
+    )
+    return FrameworkVersionOut(
+        id=version.id, version_code=version.version_code, name=version.name,
+        description=version.description, effective_from=version.effective_from,
+        effective_to=version.effective_to, is_active=version.is_active,
+        metric_count=count,
+    )
+
+
+@router.get("/versions/{version_id}/coverage")
+def get_framework_coverage(
+    version_id: uuid.UUID,
+    _user: AppUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    try:
+        return audit_framework_coverage(db, version_id)
+    except FrameworkMetadataError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
 
 
 @router.get("/versions/{version_id}/metrics", response_model=list[MetricOut])

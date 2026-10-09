@@ -26,6 +26,8 @@ CSV import, notifications, and human-in-the-loop AI extraction. Docs: `docs/ARCH
 ./run.sh --keep       # keep data, restart services, run migrations
 ./run.sh --test       # fresh start + run the complete backend test suite
 ./run.sh --keep --test  # keep data + run tests
+./run.sh --stop       # stop frontend, backend, celery, and docker compose stack
+./run.sh --stop -v    # stop stack and remove volumes (clean wipe)
 ```
 
 The script:

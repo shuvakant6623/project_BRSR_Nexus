@@ -101,6 +101,8 @@ class MetricValue(UUIDPrimaryKeyMixin, Base):
     qualitative_value: Mapped[str | None] = mapped_column(Text)
     is_derived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_calculated: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_override: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    override_reason: Mapped[str | None] = mapped_column(Text)
     formula_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("formula_definition.id", ondelete="SET NULL")
     )

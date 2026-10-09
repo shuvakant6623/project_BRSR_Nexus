@@ -12,6 +12,9 @@ const NAV: Record<string, { href: string; label: string }[]> = {
   ADMIN: [
     { href: "/", label: "Overview" },
     { href: "/entities", label: "Entities" },
+    { href: "/consolidation", label: "Consolidation" },
+    { href: "/reports", label: "Reports" },
+    { href: "/assurance", label: "Assurance" },
     { href: "/framework", label: "Framework" },
     { href: "/audit", label: "Audit" },
   ],
@@ -21,6 +24,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/exceptions", label: "Exceptions" },
     { href: "/consolidation", label: "Consolidation" },
     { href: "/reports", label: "Reports" },
+    { href: "/assurance", label: "Assurance" },
     { href: "/trends", label: "Trends" },
     { href: "/entities", label: "Entities" },
     { href: "/framework", label: "Framework" },
@@ -31,6 +35,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
     { href: "/trends", label: "Trends" },
     { href: "/reports", label: "Reports" },
     { href: "/consolidation", label: "KPIs" },
+    { href: "/assurance", label: "Assurance" },
     { href: "/framework", label: "Framework" },
   ],
   REVIEWER: [
@@ -41,6 +46,7 @@ const NAV: Record<string, { href: string; label: string }[]> = {
   ],
   ASSESSOR: [
     { href: "/", label: "Overview" },
+    { href: "/assurance", label: "Assurance Readiness" },
     { href: "/exceptions", label: "Exceptions" },
     { href: "/framework", label: "Framework" },
   ],

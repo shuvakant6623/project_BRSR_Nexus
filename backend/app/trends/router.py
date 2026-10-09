@@ -132,8 +132,7 @@ def trend(
         value, unit = (None, None)
         if code is not None:
             value, unit = _trace_value(db, entity_id, code, period.id)
-        if value is None and continuity != "gap":
-            continuity = "gap"
+        if value is None and note is None:
             note = "no consolidated value for this period yet"
         points.append(TrendPoint(
             period_label=period.label,

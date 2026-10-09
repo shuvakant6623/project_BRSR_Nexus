@@ -2,12 +2,13 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.audit.service import record
-from app.auth.deps import get_current_user, require_roles
+from app.auth.deps import bearer_scheme, get_current_user, require_roles
 from app.db.session import get_db
 from app.logging import request_id_var
 from app.models import (
@@ -158,9 +159,28 @@ def list_reports(
 @router.get("/api/v1/reports/{period_id}/preview")
 def report_preview(
     period_id: uuid.UUID,
-    user: AppUser = Depends(get_current_user),
+    token: str | None = None,
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
-) -> dict:
+):
+    from app.auth.security import decode_token
+
+    user = None
+    if credentials is not None:
+        try:
+            payload = decode_token(credentials.credentials, expected_type="access")
+            user = db.get(AppUser, uuid.UUID(payload["sub"]))
+        except Exception:
+            pass
+    if user is None and token:
+        try:
+            payload = decode_token(token, expected_type="access")
+            user = db.get(AppUser, uuid.UUID(payload["sub"]))
+        except Exception:
+            pass
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
     snapshot = db.scalar(select(ReportSnapshot).where(ReportSnapshot.period_id == period_id))
     if snapshot is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,

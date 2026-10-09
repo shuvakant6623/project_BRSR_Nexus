@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/components/AuthProvider";
 import { StyledSelect } from "@/components/StyledSelect";
+import { getAccessToken } from "@/lib/api";
 import {
   downloadReport,
   generateReport,
@@ -120,7 +121,12 @@ export default function ReportsPage() {
         )}
         {period?.locked && (
           <>
-            <a className="linkbtn" href={`/api/v1/reports/${periodId}/preview`} target="_blank" rel="noreferrer">
+            <a
+              className="linkbtn"
+              href={`/api/v1/reports/${periodId}/preview${getAccessToken() ? `?token=${encodeURIComponent(getAccessToken()!)}` : ""}`}
+              target="_blank"
+              rel="noreferrer"
+            >
               Preview HTML
             </a>
             <button className="ghostbtn" onClick={onDownload}>Download PDF</button>

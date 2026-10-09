@@ -352,3 +352,31 @@ def test_reminder_scan_creates_notifications(client, ctx):
     with TestSession() as db:
         again = scan_reminders(db)
     assert again["created"] == 0
+
+
+def test_negative_physical_value_rejected_for_draft_and_submit(client, ctx):
+    """Submitting or saving a negative physical quantity (e.g. -30 MWh) must be rejected with 422."""
+    owner_h = _login(client, "owner-alpha@example.local")
+    rows = _assignments(client, owner_h)
+    energy_assign = next(
+        a for a in rows if "ENERGY" in a["metric_code"] and a["period_id"] == str(ctx["period_fy25"])
+    )
+
+    # Draft with negative value -> 422
+    r_draft = client.post(
+        f"/api/v1/assignments/{energy_assign['id']}/value",
+        json={"action": "SAVE_DRAFT", "raw_value": -30, "raw_unit": "MWh"},
+        headers=owner_h,
+    )
+    assert r_draft.status_code == 422
+    assert "cannot be negative" in r_draft.json().get("detail", "")
+
+    # Submit with negative value -> 422
+    r_submit = client.post(
+        f"/api/v1/assignments/{energy_assign['id']}/value",
+        json={"action": "SUBMIT", "raw_value": -30, "raw_unit": "MWh"},
+        headers=owner_h,
+    )
+    assert r_submit.status_code == 422
+    assert "cannot be negative" in r_submit.json().get("detail", "")
+
