@@ -30,7 +30,6 @@ from app.models import (
 from app.models.enums import (
     AssignmentStatus,
     AuditAction,
-    MetricValueStatus,
     ValidationExceptionStatus,
     ValidationSeverity,
 )

@@ -102,7 +102,7 @@ for i in $(seq 1 30); do
   sleep 1.5
 done
 [ "$READY" = "ready" ] || { echo "✗ backend not ready"; docker compose logs backend --tail 20; exit 1; }
-ok "Backend ready (PostgreSQL + Redis + MinIO reachable)"
+ok "Backend ready (PostgreSQL + Redis + object storage reachable)"
 until curl -sf -o /dev/null http://localhost:3000; do sleep 1.5; done
 ok "Frontend is up"
 
@@ -114,7 +114,7 @@ if [ "$RUN_TESTS" = "yes" ]; then
 fi
 
 # ------------------------------------------------------------------- summary
-MINIO_DISPLAY_PORT=$(docker compose port s3 9000 2>/dev/null | cut -d: -f2 || echo "$MINIO_PORT")
+CONSOLE_DISPLAY_PORT=$(docker compose port s3 9001 2>/dev/null | cut -d: -f2 || echo "${MINIO_CONSOLE_HOST_PORT:-9001}")
 FRONTEND_PORT=$(docker compose port frontend 3000 2>/dev/null | cut -d: -f2 || echo "3000")
 BACKEND_PORT=$(docker compose port backend 8000 2>/dev/null | cut -d: -f2 || echo "8000")
 
@@ -124,7 +124,7 @@ echo -e "${GREEN}  BRSR Reporting Portal is running — demo ready${NC}"
 echo -e "${GREEN}=============================================================${NC}"
 echo -e "  Frontend      ${CYAN}http://localhost:${FRONTEND_PORT}${NC}"
 echo -e "  API           ${CYAN}http://localhost:${BACKEND_PORT}${NC}   (docs: /docs)"
-echo -e "  Storage console ${CYAN}http://localhost:${MINIO_DISPLAY_PORT:-9001}${NC}"
+echo -e "  Storage console ${CYAN}http://localhost:${CONSOLE_DISPLAY_PORT:-9001}${NC}"
 echo
 echo -e "  Demo accounts (password: ${YELLOW}Demo@12345${NC})"
 echo -e "    admin@example.local        ADMIN"

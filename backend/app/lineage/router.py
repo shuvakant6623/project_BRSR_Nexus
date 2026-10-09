@@ -24,7 +24,6 @@ from app.models import (
     MetricDefinition,
     MetricValue,
     ReportingPeriod,
-    UserEntityScope,
 )
 from app.models.enums import UserRole
 

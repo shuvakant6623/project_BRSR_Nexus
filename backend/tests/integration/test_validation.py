@@ -1,5 +1,4 @@
 """Validation-engine integration tests: rule classes, exceptions lifecycle."""
-import uuid
 
 import pytest
 from fastapi.testclient import TestClient
@@ -296,7 +295,6 @@ def test_audit_events_recorded_for_exceptions(client, ctx):
 def test_statistical_sweep_flags_cross_site_outliers(client, ctx):
     """The PDF's recommended second layer: IQR + z-score across peer plants.
     Delta is deliberately emissions-heavy -> must be flagged statistically."""
-    import pytest as _pytest
 
     # seed divergence: Delta revenue is decoupled, so its GHG intensity is a
     # peer outlier; sweep runs on approved FY24 values

@@ -1,5 +1,4 @@
 """Collection integration tests: state machine, versioning, guards, RBAC."""
-import uuid
 
 import pytest
 from fastapi.testclient import TestClient
@@ -196,7 +195,9 @@ def test_full_review_lifecycle(client, ctx):
     assert saved.status_code == 201
     resubmitted = client.post(
         f"/api/v1/assignments/{target_id}/value",
-        json={"action": "SUBMIT", "raw_value": 43.0, "raw_unit": detail["metric"]["allowed_units"][0] if detail["metric"]["allowed_units"] else None,
+        json={"action": "SUBMIT", "raw_value": 43.0,
+             "raw_unit": detail["metric"]["allowed_units"][0]
+             if detail["metric"]["allowed_units"] else None,
               "expected_last_version": saved.json()["version"]},
         headers=owner_h,
     )
@@ -318,7 +319,6 @@ def test_value_save_normalizes_units(client, ctx):
 
 def test_review_actions_create_notifications(client, ctx):
     """Approving an assignment notifies the owner (spec §22)."""
-    from sqlalchemy import text as sqltext
 
     reviewer_h = _login(client, "reviewer@example.local")
     owner_h = _login(client, "owner-gamma@example.local")
@@ -341,8 +341,9 @@ def test_review_actions_create_notifications(client, ctx):
 
 
 def test_reminder_scan_creates_notifications(client, ctx):
-    from app.notifications.router import scan_reminders
     from sqlalchemy.orm import sessionmaker
+
+    from app.notifications.router import scan_reminders
 
     TestSession = sessionmaker(bind=TEST_STATE["engine"], autoflush=False, expire_on_commit=False)
     with TestSession() as db:

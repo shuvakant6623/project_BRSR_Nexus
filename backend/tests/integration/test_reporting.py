@@ -106,7 +106,7 @@ def test_pdf_rendered_into_minio(client, ctx):
     from sqlalchemy.orm import sessionmaker
 
     from app.infra import storage
-    from app.models import GeneratedReport, ReportSnapshot
+    from app.models import GeneratedReport
     from app.reporting.service import render_pdf, render_snapshot_html
 
     TestSession = sessionmaker(bind=TEST_STATE["engine"], autoflush=False, expire_on_commit=False)
@@ -119,3 +119,70 @@ def test_pdf_rendered_into_minio(client, ctx):
     assert stat.size > 1000
     with storage.get_client().get_object("brsr-evidence", key) as resp:
         assert resp.read()[:4] == b"%PDF"
+
+
+# --- regression tests: HTML escaping in preview + readyz dependency naming ---
+
+def test_html_preview_escapes_snapshot_strings(client, ctx):
+    """Regression: snapshot-sourced strings used to be interpolated into the
+    HTML preview unescaped; they must be entity-escaped (stored-XSS surface).
+    Uses FY2025-26, which has no snapshot yet (FY2024-25's is created by the
+    lock/generate test and the table admits one snapshot per period)."""
+    from sqlalchemy import select
+    from sqlalchemy.orm import sessionmaker
+
+    from app.models import AppUser, MetricDefinition, ReportingPeriod, ReportSnapshot
+    from app.reporting.service import render_snapshot_html
+
+    TestSession = sessionmaker(bind=TEST_STATE["engine"], autoflush=False, expire_on_commit=False)
+    with TestSession() as db:
+        period_id = ctx["fy25"]
+        fv_id = db.get(ReportingPeriod, period_id).framework_version_id
+        some_user = db.scalar(select(AppUser.id).limit(1))
+        real_code = db.scalar(
+            select(MetricDefinition.metric_code).where(
+                MetricDefinition.framework_version_id == fv_id,
+                MetricDefinition.section == "A",
+            )
+        )
+        assert real_code is not None
+        payload = {
+            "period": "FY2025-26",
+            "framework_version_id": str(fv_id),
+            "values": [{
+                "entity_id": "00000000-0000-0000-0000-000000000000",
+                "metric_code": real_code,
+                "raw_value": "1",
+                "raw_unit": "<b>kWh</b>",
+                "normalized_value": None,
+                "normalized_unit": None,
+                "is_calculated": False,
+                "formula_version": None,
+                "status": "APPROVED",
+                "submitted_by": '<img src=x onerror=alert(1)>@evil.example',
+                "submitted_at": None,
+                "evidence": [],
+            }],
+        }
+        snapshot = ReportSnapshot(
+            period_id=period_id, framework_version_id=fv_id,
+            payload=payload, checksum="0" * 64, created_by=some_user,
+        )
+        db.add(snapshot)
+        db.commit()
+        html = render_snapshot_html(db, snapshot.id)
+    assert "<script>" not in html
+    assert "<img src=x" not in html
+    assert "&lt;img src=x onerror=alert(1)&gt;" in html
+    assert "&lt;b&gt;kWh&lt;/b&gt;" in html
+
+
+def test_readyz_reports_s3_dependency(client):
+    """Regression: the object-storage dependency used to be reported under the
+    key 'minio' although the storage service is S3-compatible (RustFS)."""
+    r = client.get("/readyz")
+    assert r.status_code == 200
+    deps = r.json()["dependencies"]
+    assert "s3" in deps
+    assert "minio" not in deps
+    assert deps["s3"] is True

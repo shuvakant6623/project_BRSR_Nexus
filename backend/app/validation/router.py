@@ -9,21 +9,19 @@ from sqlalchemy.orm import Session
 
 from app.audit.service import record
 from app.auth.deps import get_current_user, get_scoped_entity_ids
-from app.collection import service as collection_service
 from app.db.session import get_db
 from app.logging import request_id_var
 from app.models import (
     AppUser,
     Assignment,
-    Entity,
     ReportingPeriod,
     ValidationException,
 )
 from app.models.enums import (
     AssignmentStatus,
     AuditAction,
-    ValidationExceptionStatus,
     UserRole,
+    ValidationExceptionStatus,
     ValidationSeverity,
 )
 from app.validation import engine

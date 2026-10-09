@@ -20,8 +20,9 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://redis:6379/0"
 
-    # Object storage (S3-compatible: RustFS, MinIO, AWS S3, ...)
-    s3_endpoint: str = "http://minio:9000"
+    # Object storage (S3-compatible: RustFS, MinIO, AWS S3, ...).
+    # Default matches the docker compose service name `s3`.
+    s3_endpoint: str = "http://s3:9000"
     s3_access_key: str = "brsr"
     s3_secret_key: str = "brsr-secret"
     s3_bucket: str = "brsr-evidence"

@@ -87,7 +87,7 @@ async def upload_evidence(
         db.commit()
     except service.EvidenceError as exc:
         db.rollback()
-        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
     db.refresh(evidence)
     out = _out(evidence)
     if duplicate_of is not None:

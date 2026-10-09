@@ -1,23 +1,21 @@
 """Notifications service + API (spec §22). In-app notifications created by
 review actions and the Celery Beat reminder scan."""
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.deps import get_current_user
+from app.config import get_settings
 from app.db.session import get_db
-from app.models import AppUser, Assignment, Notification, UserEntityScope
+from app.models import AppUser, Assignment, Notification
 from app.models.enums import (
     AssignmentStatus,
-    AuditAction,
     NotificationType,
-    UserRole,
 )
-from app.config import get_settings
 
 
 class NotificationOut(BaseModel):
@@ -90,7 +88,7 @@ def mark_read(
     if n.read_at is None:
         n.read_at = datetime.now(UTC)
         db.commit()
-    return None
+    return
 
 
 # ------------------------------------------------------------------ beat scan

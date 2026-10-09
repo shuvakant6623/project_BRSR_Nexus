@@ -24,7 +24,6 @@ from app.models import (
     AppUser,
     Assignment,
     Entity,
-    FrameworkVersion,
     MetricDefinition,
     MetricValue,
     ReportingPeriod,
@@ -184,8 +183,8 @@ def _structural_validate(metric: MetricDefinition, payload: dict) -> None:
             raise CollectionError("Numeric value is required", 422)
         try:
             Decimal(str(payload["raw_value"]))
-        except InvalidOperation:
-            raise CollectionError("Value is not a valid number", 422)
+        except InvalidOperation as exc:
+            raise CollectionError("Value is not a valid number", 422) from exc
         if metric.allowed_units and payload.get("raw_unit") not in metric.allowed_units:
             raise CollectionError(
                 f"Unit {payload.get('raw_unit')!r} is not allowed for this metric "
@@ -235,7 +234,7 @@ def save_value(
                 metric.unit_family, metric.canonical_unit,
             )
         except UnitConversionError as exc:
-            raise CollectionError(str(exc), 422)
+            raise CollectionError(str(exc), 422) from exc
 
     if action == "SUBMIT":
         _structural_validate(metric, payload)

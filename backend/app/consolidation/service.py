@@ -17,7 +17,7 @@ ids, so any consolidated number can be decomposed.
 """
 import uuid
 from datetime import UTC, datetime
-from decimal import Decimal, ROUND_HALF_EVEN, getcontext
+from decimal import ROUND_HALF_EVEN, Decimal, getcontext
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -32,7 +32,7 @@ from app.models import (
     MetricValue,
     ReportingPeriod,
 )
-from app.models.enums import AssignmentStatus, AuditAction, MetricValueStatus
+from app.models.enums import AuditAction, MetricValueStatus
 
 getcontext().prec = 28
 
@@ -167,7 +167,7 @@ class _Consolidator:
             return result, metric.canonical_unit or "", contributions
 
         if semantics == _semantics("SUM"):
-            total = Decimal("0")
+            total = Decimal(0)
             unit = metric.canonical_unit or ""
             contributions: list[dict] = []
             for child in children:
@@ -222,8 +222,8 @@ def _semantics(name: str):
 def _scale(metric: MetricDefinition) -> Decimal:
     """Ratio metrics expressed as percent are scaled x100; unit ratios are x1."""
     if metric.unit_family == "percent" or metric.canonical_unit == "percent":
-        return Decimal("100")
-    return Decimal("1")
+        return Decimal(100)
+    return Decimal(1)
 
 
 def consolidate(

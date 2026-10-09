@@ -8,7 +8,7 @@ import uuid
 
 import pytest
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
 TEST_DB = "brsr_test"
 

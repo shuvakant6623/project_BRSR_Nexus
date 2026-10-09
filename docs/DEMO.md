@@ -43,3 +43,12 @@
 Closing line: "Every number you just saw had an owner, a unit, a validation
 state, evidence, a review state and an audit trail before it reached the
 report."
+
+## Automated walkthrough
+
+`bash scripts/demo_walkthrough.sh` drives the whole flow above against the
+live stack via the API: logins for every role, submit with unit
+normalization, YoY warning, evidence-gated approval, exception
+explain/resolve, RBAC negatives, derived calculations and FY24 group
+consolidation with ratio math. Run it once on a fresh `./run.sh` state — it
+mutates demo data as it goes.

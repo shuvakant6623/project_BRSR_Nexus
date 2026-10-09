@@ -135,8 +135,10 @@ def test_admin_creates_user_with_audit_event(client, seeded):
     )
     assert r.status_code == 409
     # audit event recorded for the creation
-    from sqlalchemy import create_engine  # noqa: F401
-    from sqlalchemy import text
+    from sqlalchemy import (
+        create_engine,  # noqa: F401
+        text,
+    )
 
     with TEST_STATE["engine"].connect() as conn:
         count = conn.execute(

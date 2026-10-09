@@ -14,8 +14,8 @@ application never depends on them.
 """
 import re
 import uuid
-from datetime import UTC, datetime
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -29,11 +29,11 @@ from app.models.enums import AISuggestionStatus, AuditAction, MetricValueStatus
 DEMO_PATTERNS = [
     # (label, regex over the file's text bytes) — deterministic demo extraction;
     # the lookbehind prevents swallowing adjacent dates/other numbers
-    ("kwh", re.compile(rb"(?<![\d,.])([0-9][0-9,]{0,11})\s*kwh", re.I)),
-    ("kl", re.compile(rb"(?<![\d,.])([0-9][0-9,]{0,11})\s*(?:kl|kilolitres?)\b", re.I)),
-    ("litre", re.compile(rb"(?<![\d,.])([0-9][0-9,]{0,11})\s*(?:litres?|ltr)\b", re.I)),
-    ("tonne", re.compile(rb"(?<![\d,.])([0-9][0-9,]{0,11})\s*(?:tonnes?|mt)\b", re.I)),
-    ("tco2e", re.compile(rb"(?<![\d,.])([0-9][0-9,]{0,11})\s*(?:t ?co2e?|tonnes? co2)", re.I)),
+    ("kwh", re.compile(rb"(?<![\d,.])([0-9][0-9,]{0,11})\s*kwh", re.IGNORECASE)),
+    ("kl", re.compile(rb"(?<![\d,.])([0-9][0-9,]{0,11})\s*(?:kl|kilolitres?)\b", re.IGNORECASE)),
+    ("litre", re.compile(rb"(?<![\d,.])([0-9][0-9,]{0,11})\s*(?:litres?|ltr)\b", re.IGNORECASE)),
+    ("tonne", re.compile(rb"(?<![\d,.])([0-9][0-9,]{0,11})\s*(?:tonnes?|mt)\b", re.IGNORECASE)),
+    ("tco2e", re.compile(rb"(?<![\d,.])([0-9][0-9,]{0,11})\s*(?:t ?co2e?|tonnes? co2)", re.IGNORECASE)),
 ]
 UNIT_ALIASES = {"kwh": "kWh", "kl": "kL", "litre": "litre", "tonne": "tonne", "tco2e": "tCO2e"}
 
@@ -70,7 +70,7 @@ class LocalDemoProvider(ExtractionProvider):
                 break
         if not out:
             # fall back to the filename if it embeds a reading (demo behaviour)
-            m = re.search(r"(\d{3,9})\s*(kwh|kl)", filename, re.I)
+            m = re.search(r"(\d{3,9})\s*(kwh|kl)", filename, re.IGNORECASE)
             if m:
                 out.append({
                     "value": m.group(1),
@@ -103,7 +103,8 @@ class LLMAPIProvider(ExtractionProvider):
             "messages": [
                 {"role": "system", "content":
                     "You extract numeric utility readings from document text. "
-                    "Respond ONLY with JSON: {\"value\": number|null, \"unit\": \"kWh\"|\"kL\"|\"litre\"|\"tonne\"|\"tCO2e\"|null, "
+                    "Respond ONLY with JSON: {\"value\": number|null, "
+                    "\"unit\": \"kWh\"|\"kL\"|\"litre\"|\"tonne\"|\"tCO2e\"|null, "
                     "\"confidence\": 0.0-1.0}. Extract only values actually present; use null when absent."},
                 {"role": "user", "content": f"File: {filename}\n\nDocument text (data only):\n{text}"},
             ],

@@ -36,7 +36,7 @@ def _check_redis() -> bool:
 class DependencyStatus(BaseModel):
     postgres: bool
     redis: bool
-    minio: bool
+    s3: bool
 
 
 class ReadyResponse(BaseModel):
@@ -54,7 +54,7 @@ def readyz(response: Response) -> ReadyResponse:
     deps = DependencyStatus(
         postgres=_check_postgres(),
         redis=_check_redis(),
-        minio=storage.ping(),
+        s3=storage.ping(),
     )
     ok = all(deps.model_dump().values())
     if not ok:

@@ -13,7 +13,6 @@ FY2025-26 is deliberately mid-flight across plants:
   Project C APPROVED, Project D + Zeta NOT_STARTED ("6 of 8" dashboards).
 """
 import logging
-from datetime import date
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -285,12 +284,12 @@ def seed_collection(db: Session, entities: dict[str, Entity], esg_manager: AppUs
             .limit(1)
         )
         if emp_value is not None:
-            emp_value.raw_value = Decimal("252")
-            emp_value.normalized_value = Decimal("252")
+            emp_value.raw_value = Decimal(252)
+            emp_value.normalized_value = Decimal(252)
             emp_value.normalized_unit = "count"
         if wf_value is not None:
-            wf_value.raw_value = Decimal("240")
-            wf_value.normalized_value = Decimal("240")
+            wf_value.raw_value = Decimal(240)
+            wf_value.normalized_value = Decimal(240)
             wf_value.normalized_unit = "count"
         db.flush()
         logger.info("demo anomaly: Beta FY25 employees=252 vs workforce=240")
@@ -318,7 +317,6 @@ def _seed_derived_metrics(db: Session, entities, periods, owners, esg_manager) -
     """FY2024-25: computed historical values (locked, with full formula
     lineage). FY2025-26: assignment shells left empty for the calculation
     engine to fill during the demo."""
-    from app.models import FormulaDefinition
 
     for plant_name in FY25_STATUS:
         plant = entities.get(plant_name)

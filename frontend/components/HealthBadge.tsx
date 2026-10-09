@@ -34,7 +34,7 @@ export function HealthBadge() {
   return (
     <span className={`badge ${state.kind === "ok" ? "ok" : "warn"}`}>
       {label} — PG: {state.deps.postgres ? "up" : "down"}, Redis:{" "}
-      {state.deps.redis ? "up" : "down"}, MinIO: {state.deps.minio ? "up" : "down"}
+      {state.deps.redis ? "up" : "down"}, S3: {state.deps.s3 ? "up" : "down"}
     </span>
   );
 }

@@ -42,5 +42,6 @@ format:
 
 reset-db:
 	docker compose down -v
-	docker compose up -d postgres redis minio
-	make migrate seed
+	docker compose up -d postgres redis s3
+	docker compose run --rm backend alembic upgrade head
+	docker compose run --rm backend python -m app.seed

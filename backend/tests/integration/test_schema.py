@@ -95,3 +95,27 @@ def test_audit_event_is_immutable(migrated_engine):
         conn.commit()
         conn.execute(text("ALTER TABLE audit_event ENABLE TRIGGER audit_event_immutable"))
         conn.commit()
+
+
+# --- regression test: no duplicate route registration ------------------------
+
+def test_reporting_periods_route_registered_once():
+    """Regression: main.py used to include the reporting router twice, so
+    /api/v1/reporting-periods was registered twice (latent middleware/audit
+    double-execution hazard)."""
+    from fastapi.routing import APIRoute
+
+    from app.main import app
+
+    paths: list[str] = []
+
+    def _collect(router) -> None:
+        for r in router.routes:
+            inner = getattr(r, "original_router", None)
+            if inner is not None:  # _IncludedRouter wrapper (newer FastAPI)
+                _collect(inner)
+            elif isinstance(r, APIRoute):
+                paths.append(r.path)
+
+    _collect(app)
+    assert paths.count("/api/v1/reporting-periods") == 1

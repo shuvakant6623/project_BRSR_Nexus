@@ -46,7 +46,7 @@ def generate_report(self, report_id: str) -> dict:
             db.commit()
         logger.exception("report generation failed for %s", report_id)
         if self.request.retries < (self.max_retries or 0):
-            raise self.retry(exc=exc)
+            raise self.retry(exc=exc) from exc
         return {"report_id": report_id, "status": "FAILED", "error": str(exc)}
     finally:
         db.close()
@@ -55,9 +55,8 @@ def generate_report(self, report_id: str) -> dict:
 @celery_app.task
 def scan_reminders() -> dict:
     """Celery Beat scan (spec §22): due-soon / overdue notifications."""
-    from app.notifications.router import scan_reminders as _scan
-
     from app.db.session import SessionLocal
+    from app.notifications.router import scan_reminders as _scan
 
     db = SessionLocal()
     try:
@@ -76,8 +75,7 @@ def process_bulk_import(self, job_id: str, actor_id: str) -> dict:
 
     db = SessionLocal()
     try:
-        result = process_import(db, _uuid.UUID(job_id), _uuid.UUID(actor_id))
-        return result
+        return process_import(db, _uuid.UUID(job_id), _uuid.UUID(actor_id))
     except Exception as exc:
         from app.models import BulkImportJob
 

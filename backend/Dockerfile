@@ -14,6 +14,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY alembic.ini .
+COPY ruff.toml .
 COPY migrations ./migrations
 COPY app ./app
 COPY tests ./tests

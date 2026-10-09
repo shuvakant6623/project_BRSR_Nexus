@@ -46,7 +46,8 @@ def list_audit(
     db: Session = Depends(get_db),
 ) -> list[AuditOut]:
     if user.role not in READ_ROLES:
-        from fastapi import HTTPException, status as http_status
+        from fastapi import HTTPException
+        from fastapi import status as http_status
 
         raise HTTPException(status_code=http_status.HTTP_403_FORBIDDEN,
                             detail="Your role cannot read the audit trail")

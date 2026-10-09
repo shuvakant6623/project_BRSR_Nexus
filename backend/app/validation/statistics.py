@@ -29,11 +29,9 @@ from app.models import (
     ValidationRule,
 )
 from app.models.enums import (
-    AssignmentStatus,
     AuditAction,
     MetricValueStatus,
     ValidationExceptionStatus,
-    ValidationSeverity,
 )
 
 IQR_MULTIPLIER = 1.5
@@ -183,8 +181,8 @@ def run_statistical_sweep(
         checked += 1
         bounds = iqr_bounds(values)
         if bounds is not None and iqr_rule is not None:
-            q1, q3, iqr, lower, upper = bounds
-            for entity, value, v in peers:
+            q1, q3, _iqr, lower, upper = bounds
+            for entity, _value, v in peers:
                 if v < lower or v > upper:
                     side = "above" if v > upper else "below"
                     raised += int(_persist(
@@ -197,7 +195,7 @@ def run_statistical_sweep(
                         observed=v, actor_id=actor_id, actor_label=actor_label,
                     ))
         if z_rule is not None:
-            for entity, value, v in peers:
+            for entity, _value, v in peers:
                 z = zscore(v, values)
                 if z is not None and abs(z) > ZSCORE_THRESHOLD:
                     raised += int(_persist(
